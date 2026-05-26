@@ -1,0 +1,15 @@
+Source	Target	Haberman	p(Fisher)
+Geospiza magnirostris	Platyspiza crassirostris	2.58429321644651	0.0294117647058822
+Geospiza fortis	Geospiza fuliginosa	3.44082631271701	0.00588235294117645
+Geospiza fortis	Geospiza scandens	3.54314071888856	0.00210084033613445
+Geospiza fortis	Camarhynchus psitticula	2.733592411558	0.0147058823529411
+Geospiza fortis	Camarhynchus parvulus	2.733592411558	0.0147058823529411
+Geospiza fortis	Platyspiza crassirostris	3.09673111356856	0.00630252100840334
+Geospiza fuliginosa	Geospiza scandens	2.95683228182749	0.0147058823529411
+Geospiza fuliginosa	Platyspiza crassirostris	2.58429321644651	0.0294117647058822
+Geospiza scandens	Platyspiza crassirostris	2.48977707817184	0.0276341305753071
+Camarhynchus psitticula	Camarhynchus parvulus	3.12177997368194	0.00365076100370221
+Camarhynchus psitticula	Platyspiza crassirostris	3.63960894145968	0.000565610859728505
+Camarhynchus parvulus	Platyspiza crassirostris	3.63960894145968	0.000565610859728505
+Camarhynchus parvulus	Cactospiza pallida	2.54772625902178	0.0169683257918551
+Platyspiza crassirostris	Cactospiza pallida	2.24896670488236	0.0373303167420814
