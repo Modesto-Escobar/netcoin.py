@@ -152,6 +152,15 @@ until a dedicated Python citation is available:
 > Cabrera-Álvarez, P., & Calvo-López, C. *netCoin: Interactive Analytic
 > Networks*. <https://CRAN.R-project.org/package=netCoin>
 
+### Further reading
+
+- Escobar, M. (2015). Studying Coincidences with Network Analysis and Other
+  Multivariate Tools. *The Stata Journal*, 15(4), 1118–1156.
+- Escobar, M., & Martínez-Uribe, L. (2020). Network Coincidence Analysis:
+  The Netcoin R Package. *Journal of Statistical Software*, 93(11), 1–31.
+- Escobar, M., & Calvo, C. (2024). *Redes Analíticas. Grafos de Coincidencia
+  y Regresión*. Madrid: CIS.
+
 ## Authors
 
 - **Modesto Escobar** (Universidad de Salamanca) — creator & maintainer
@@ -159,12 +168,8 @@ until a dedicated Python citation is available:
 - David Barrios (Universidad de Salamanca)
 - Carlos Prieto (Universidad de Salamanca)
   [[ORCID]](https://orcid.org/0000-0003-2064-4842)
-- Luis Martínez-Uribe (Universidad de Salamanca)
-  [[ORCID]](https://orcid.org/0000-0002-7795-3972)
-- Pablo Cabrera-Álvarez (Universidad de Salamanca)
-  [[ORCID]](https://orcid.org/0000-0001-8105-5908)
-- Cristina Calvo-López (Universidad de Salamanca)
-  [[ORCID]](https://orcid.org/0000-0001-5039-1263)
+- José Antonio Robles Querencia (Universidad de Salamanca)
+- Emilio Portela Navarro (Universidad de Salamanca)
 
 ## Acknowledgments
 
