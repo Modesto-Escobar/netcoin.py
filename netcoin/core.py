@@ -463,27 +463,12 @@ class netCoin:
         output.append("Title: " + self.options['main'])
         output.append("")
 
-      columns = self.getNodeAttr()
-      row_format ="{:>15}" * (len(columns))
-      output.append(row_format.format(*columns))
-      count = min(self.ncount(),6)
-      for i in range(count):
-        row = map(lambda x: str(self.nodes[x][i]),columns)
-        output.append(row_format.format(*row))
-      if self.ncount()>6:
-        output.append("...")
-      output.append("")
-
-      columns = self.getLinkAttr()
-      row_format ="{:>15}" * (len(columns))
-      output.append(row_format.format(*columns))
-      count = min(self.lcount(),6)
-      for i in range(count):
-        row = list(map(lambda x: str(self.links[x][i]),columns))
-        output.append(row_format.format(*row))
-      if self.lcount()>6:
-        output.append("...")
-      output.append("")
+      for frame, count in ((self.nodes_frame(), self.ncount()), (self.links_frame(), self.lcount())):
+        if count:
+          output.append(frame.head(6).to_string(index=False))
+          if count > 6:
+            output.append("...")
+          output.append("")
 
       if 'note' in self.options:
         output.append(self.options['note'])

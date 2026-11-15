@@ -241,6 +241,7 @@ def coin(
             xm = (1 - nomiss).T @ (w[:, None] * x)
         m, xm = frame(m), frame(xm)
 
+    n = int(n) if float(n).is_integer() else n
     return Coin(frame(f), n, m, xm)
 
 

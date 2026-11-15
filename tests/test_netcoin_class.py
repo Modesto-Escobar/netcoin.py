@@ -45,3 +45,11 @@ def test_frames_roundtrip():
 def test_scenarios_is_an_integer_when_it_is_one():
     net = netCoin({"name": ["a"]}, scenarios=17.0)
     assert net.options["scenarios"] == 17 and isinstance(net.options["scenarios"], int)
+
+
+def test_str_shows_the_first_rows_of_nodes_and_links():
+    nodes = {"name": [f"n{i}" for i in range(8)], "v": list(range(8))}
+    links = {"Source": [f"n{i}" for i in range(7)], "Target": [f"n{i + 1}" for i in range(7)]}
+    text = str(netCoin(nodes, links, main="Title"))
+    assert text.startswith("Title: Title") and "n5" in text and "n7" not in text
+    assert text.count("...") == 2
