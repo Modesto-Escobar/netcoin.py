@@ -31,3 +31,6 @@ python_examples/tmp/
 
 # Tooling
 .pytest_cache/
+
+# personal data of social-network accounts: keep it out of the repository
+python_examples/Proces/
