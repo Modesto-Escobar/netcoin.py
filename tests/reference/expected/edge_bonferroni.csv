@@ -1,0 +1,20 @@
+"Source","Target","Haberman","p(Z)"
+"Geospiza magnirostris","Certhidea olivacea",NA,0
+"Geospiza fortis","Geospiza fuliginosa",3.44082631271701,0.0015597406285488
+"Geospiza fortis","Geospiza scandens",3.54314071888856,0.00124947976457257
+"Geospiza fortis","Platyspiza crassirostris",3.09673111356856,0.00327512844344025
+"Geospiza fortis","Certhidea olivacea",NA,0
+"Geospiza fuliginosa","Geospiza scandens",2.95683228182749,0.00441509727830525
+"Geospiza fuliginosa","Certhidea olivacea",NA,0
+"Geospiza difficilis","Certhidea olivacea",NA,0
+"Geospiza scandens","Certhidea olivacea",NA,0
+"Geospiza conirostris","Certhidea olivacea",NA,0
+"Camarhynchus psitticula","Camarhynchus parvulus",3.12177997368194,0.00310390356449297
+"Camarhynchus psitticula","Platyspiza crassirostris",3.63960894145968,0.0010134597070911
+"Camarhynchus psitticula","Certhidea olivacea",NA,0
+"Camarhynchus pauper","Certhidea olivacea",NA,0
+"Camarhynchus parvulus","Platyspiza crassirostris",3.63960894145968,0.0010134597070911
+"Camarhynchus parvulus","Certhidea olivacea",NA,0
+"Platyspiza crassirostris","Certhidea olivacea",NA,0
+"Cactospiza pallida","Certhidea olivacea",NA,0
+"Cactospiza heliobates","Certhidea olivacea",NA,0

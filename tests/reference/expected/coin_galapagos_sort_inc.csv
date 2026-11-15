@@ -1,0 +1,14 @@
+".row","Camarhynchus pauper","Geospiza conirostris","Cactospiza heliobates","Cactospiza pallida","Geospiza difficilis","Camarhynchus psitticula","Camarhynchus parvulus","Platyspiza crassirostris","Geospiza scandens","Geospiza fortis","Geospiza magnirostris","Geospiza fuliginosa","Certhidea olivacea"
+"Camarhynchus pauper",1,0,0,0,1,1,1,1,1,1,1,1,1
+"Geospiza conirostris",0,2,0,0,1,0,0,0,0,0,1,1,2
+"Cactospiza heliobates",0,0,2,2,2,2,2,2,1,2,2,2,2
+"Cactospiza pallida",0,0,2,6,5,5,6,6,5,6,6,6,6
+"Geospiza difficilis",1,1,2,5,10,6,7,7,6,7,10,7,10
+"Camarhynchus psitticula",1,0,2,5,6,10,9,10,9,10,10,10,10
+"Camarhynchus parvulus",1,0,2,6,7,9,10,10,9,10,10,10,10
+"Platyspiza crassirostris",1,0,2,6,7,10,10,11,10,11,11,11,11
+"Geospiza scandens",1,0,1,5,6,9,9,10,12,12,10,12,12
+"Geospiza fortis",1,0,2,6,7,10,10,11,12,13,11,13,13
+"Geospiza magnirostris",1,1,2,6,10,10,10,11,10,11,14,11,14
+"Geospiza fuliginosa",1,1,2,6,7,10,10,11,12,13,11,14,14
+"Certhidea olivacea",1,2,2,6,10,10,10,11,12,13,14,14,17

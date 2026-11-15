@@ -1,0 +1,377 @@
+{
+  "R": "R version 4.6.1 (2026-06-24 ucrt)",
+  "netCoin": "2.1.49",
+  "rD3plot": "1.1.71",
+  "generated": "2026-11-15",
+  "collate": "Spanish_Spain.utf8",
+  "cases": {
+    "coin_galapagos": {
+      "call": "coin(galapagos)",
+      "files": "coin_galapagos"
+    },
+    "coin_dice": {
+      "call": "coin(dice[, 2:11])",
+      "files": "coin_dice"
+    },
+    "coin_galapagos_min3": {
+      "call": "coin(galapagos, minimum = 3)",
+      "files": "coin_galapagos_min3"
+    },
+    "coin_galapagos_sort": {
+      "call": "coin(galapagos, sort = TRUE)",
+      "files": "coin_galapagos_sort"
+    },
+    "coin_galapagos_sort_inc": {
+      "call": "coin(galapagos, sort = TRUE, decreasing = FALSE)",
+      "files": "coin_galapagos_sort_inc"
+    },
+    "coin_galapagos_weight": {
+      "call": "coin(galapagos, weight = weights)",
+      "files": "coin_galapagos_weight"
+    },
+    "coin_galapagos_total": {
+      "call": "coin(galapagos, total = TRUE)",
+      "files": "coin_galapagos_total"
+    },
+    "coin_galapagos_na_pairwise": {
+      "call": "coin(galapagos_na, pairwise = TRUE)",
+      "files": "coin_galapagos_na_pairwise"
+    },
+    "coin_galapagos_na_listwise": {
+      "call": "coin(galapagos_na)",
+      "files": "coin_galapagos_na_listwise"
+    },
+    "sim_galapagos_matching": {
+      "call": "sim(coin(galapagos), \"M\")",
+      "files": "sim_galapagos_matching"
+    },
+    "sim_dice_matching": {
+      "call": "sim(coin(dice), \"M\")",
+      "files": "sim_dice_matching"
+    },
+    "sim_galapagos_Rogers": {
+      "call": "sim(coin(galapagos), \"T\")",
+      "files": "sim_galapagos_Rogers"
+    },
+    "sim_dice_Rogers": {
+      "call": "sim(coin(dice), \"T\")",
+      "files": "sim_dice_Rogers"
+    },
+    "sim_galapagos_Gower": {
+      "call": "sim(coin(galapagos), \"G\")",
+      "files": "sim_galapagos_Gower"
+    },
+    "sim_dice_Gower": {
+      "call": "sim(coin(dice), \"G\")",
+      "files": "sim_dice_Gower"
+    },
+    "sim_galapagos_Sneath": {
+      "call": "sim(coin(galapagos), \"S\")",
+      "files": "sim_galapagos_Sneath"
+    },
+    "sim_dice_Sneath": {
+      "call": "sim(coin(dice), \"S\")",
+      "files": "sim_dice_Sneath"
+    },
+    "sim_galapagos_Anderberg": {
+      "call": "sim(coin(galapagos), \"B\")",
+      "files": "sim_galapagos_Anderberg"
+    },
+    "sim_dice_Anderberg": {
+      "call": "sim(coin(dice), \"B\")",
+      "files": "sim_dice_Anderberg"
+    },
+    "sim_galapagos_Jaccard": {
+      "call": "sim(coin(galapagos), \"J\")",
+      "files": "sim_galapagos_Jaccard"
+    },
+    "sim_dice_Jaccard": {
+      "call": "sim(coin(dice), \"J\")",
+      "files": "sim_dice_Jaccard"
+    },
+    "sim_galapagos_dice": {
+      "call": "sim(coin(galapagos), \"D\")",
+      "files": "sim_galapagos_dice"
+    },
+    "sim_dice_dice": {
+      "call": "sim(coin(dice), \"D\")",
+      "files": "sim_dice_dice"
+    },
+    "sim_galapagos_antiDice": {
+      "call": "sim(coin(galapagos), \"A\")",
+      "files": "sim_galapagos_antiDice"
+    },
+    "sim_dice_antiDice": {
+      "call": "sim(coin(dice), \"A\")",
+      "files": "sim_dice_antiDice"
+    },
+    "sim_galapagos_Ochiai": {
+      "call": "sim(coin(galapagos), \"O\")",
+      "files": "sim_galapagos_Ochiai"
+    },
+    "sim_dice_Ochiai": {
+      "call": "sim(coin(dice), \"O\")",
+      "files": "sim_dice_Ochiai"
+    },
+    "sim_galapagos_Kulczynski": {
+      "call": "sim(coin(galapagos), \"K\")",
+      "files": "sim_galapagos_Kulczynski"
+    },
+    "sim_dice_Kulczynski": {
+      "call": "sim(coin(dice), \"K\")",
+      "files": "sim_dice_Kulczynski"
+    },
+    "sim_galapagos_Hamann": {
+      "call": "sim(coin(galapagos), \"N\")",
+      "files": "sim_galapagos_Hamann"
+    },
+    "sim_dice_Hamann": {
+      "call": "sim(coin(dice), \"N\")",
+      "files": "sim_dice_Hamann"
+    },
+    "sim_galapagos_Yule": {
+      "call": "sim(coin(galapagos), \"Y\")",
+      "files": "sim_galapagos_Yule"
+    },
+    "sim_dice_Yule": {
+      "call": "sim(coin(dice), \"Y\")",
+      "files": "sim_dice_Yule"
+    },
+    "sim_galapagos_Pearson": {
+      "call": "sim(coin(galapagos), \"P\")",
+      "files": "sim_galapagos_Pearson"
+    },
+    "sim_dice_Pearson": {
+      "call": "sim(coin(dice), \"P\")",
+      "files": "sim_dice_Pearson"
+    },
+    "sim_galapagos_tetrachoric": {
+      "call": "sim(coin(galapagos), \"V\")",
+      "files": "sim_galapagos_tetrachoric"
+    },
+    "sim_dice_tetrachoric": {
+      "call": "sim(coin(dice), \"V\")",
+      "files": "sim_dice_tetrachoric"
+    },
+    "sim_galapagos_odds": {
+      "call": "sim(coin(galapagos), \"C\")",
+      "files": "sim_galapagos_odds"
+    },
+    "sim_dice_odds": {
+      "call": "sim(coin(dice), \"C\")",
+      "files": "sim_dice_odds"
+    },
+    "sim_galapagos_Russell": {
+      "call": "sim(coin(galapagos), \"R\")",
+      "files": "sim_galapagos_Russell"
+    },
+    "sim_dice_Russell": {
+      "call": "sim(coin(dice), \"R\")",
+      "files": "sim_dice_Russell"
+    },
+    "sim_galapagos_expected": {
+      "call": "sim(coin(galapagos), \"E\")",
+      "files": "sim_galapagos_expected"
+    },
+    "sim_dice_expected": {
+      "call": "sim(coin(dice), \"E\")",
+      "files": "sim_dice_expected"
+    },
+    "sim_galapagos_confidence": {
+      "call": "sim(coin(galapagos), \"L\")",
+      "files": ["sim_galapagos_conf.L", "sim_galapagos_confidence", "sim_galapagos_conf.U"]
+    },
+    "sim_dice_confidence": {
+      "call": "sim(coin(dice), \"L\")",
+      "files": ["sim_dice_conf.L", "sim_dice_confidence", "sim_dice_conf.U"]
+    },
+    "sim_galapagos_Haberman": {
+      "call": "sim(coin(galapagos), \"H\")",
+      "files": "sim_galapagos_Haberman"
+    },
+    "sim_dice_Haberman": {
+      "call": "sim(coin(dice), \"H\")",
+      "files": "sim_dice_Haberman"
+    },
+    "sim_galapagos_Z": {
+      "call": "sim(coin(galapagos), \"Z\")",
+      "files": "sim_galapagos_Z"
+    },
+    "sim_dice_Z": {
+      "call": "sim(coin(dice), \"Z\")",
+      "files": "sim_dice_Z"
+    },
+    "sim_galapagos_Fisher": {
+      "call": "sim(coin(galapagos), \"W\")",
+      "files": "sim_galapagos_Fisher"
+    },
+    "sim_dice_Fisher": {
+      "call": "sim(coin(dice), \"W\")",
+      "files": "sim_dice_Fisher"
+    },
+    "sim_galapagos_coincidences": {
+      "call": "sim(coin(galapagos), \"F\")",
+      "files": "sim_galapagos_coincidences"
+    },
+    "sim_dice_coincidences": {
+      "call": "sim(coin(dice), \"F\")",
+      "files": "sim_dice_coincidences"
+    },
+    "sim_galapagos_relative": {
+      "call": "sim(coin(galapagos), \"X\")",
+      "files": "sim_galapagos_relative"
+    },
+    "sim_dice_relative": {
+      "call": "sim(coin(dice), \"X\")",
+      "files": "sim_dice_relative"
+    },
+    "sim_galapagos_sConditional": {
+      "call": "sim(coin(galapagos), \"I\")",
+      "files": "sim_galapagos_sConditional"
+    },
+    "sim_dice_sConditional": {
+      "call": "sim(coin(dice), \"I\")",
+      "files": "sim_dice_sConditional"
+    },
+    "sim_galapagos_tConditional": {
+      "call": "sim(coin(galapagos), \"0\")",
+      "files": "sim_galapagos_tConditional"
+    },
+    "sim_dice_tConditional": {
+      "call": "sim(coin(dice), \"0\")",
+      "files": "sim_dice_tConditional"
+    },
+    "sim_galapagos_c.conditional": {
+      "call": "sim(coin(galapagos), \"U\")",
+      "files": "sim_galapagos_c.conditional"
+    },
+    "sim_dice_c.conditional": {
+      "call": "sim(coin(dice), \"U\")",
+      "files": "sim_dice_c.conditional"
+    },
+    "sim_galapagos_c.probable": {
+      "call": "sim(coin(galapagos), \"Q\")",
+      "files": "sim_galapagos_c.probable"
+    },
+    "sim_dice_c.probable": {
+      "call": "sim(coin(dice), \"Q\")",
+      "files": "sim_dice_c.probable"
+    },
+    "sim_galapagos_confidence_l90": {
+      "call": "sim(coin(galapagos), \"L\", level = .90)",
+      "files": ["sim_galapagos_conf.L_l90", "sim_galapagos_confidence_l90", "sim_galapagos_conf.U_l90"]
+    },
+    "sim_galapagos_Jaccard_min3": {
+      "call": "sim(galapagos, \"J\", minimum = 3)",
+      "files": "sim_galapagos_Jaccard_min3"
+    },
+    "edge_default_galapagos": {
+      "call": "edgeList(coin(galapagos))",
+      "files": "edge_default_galapagos"
+    },
+    "edge_jaccard_dice_min": {
+      "call": "edgeList(coin(galapagos), c(\"Jaccard\",\"dice\"), criteria = \"Jaccard\", min = .3)",
+      "files": "edge_jaccard_dice_min"
+    },
+    "edge_dice_sorted": {
+      "call": "edgeList(coin(dice), c(\"Haberman\",\"Z\"), criteria = \"Haberman\", min = 2, sort = \"Haberman\")",
+      "files": "edge_dice_sorted"
+    },
+    "edge_bonferroni": {
+      "call": "edgeList(coin(galapagos), \"Haberman\", Bonferroni = TRUE)",
+      "files": "edge_bonferroni"
+    },
+    "edge_support": {
+      "call": "edgeList(coin(galapagos), c(\"Haberman\",\"coincidences\",\"expected\",\"confidence\"), support = 3)",
+      "files": "edge_support"
+    },
+    "edge_directed": {
+      "call": "edgeList(coin(galapagos), \"Haberman\", directed = TRUE, diagonal = TRUE)",
+      "files": "edge_directed"
+    },
+    "edge_conditional": {
+      "call": "edgeList(coin(galapagos), c(\"CC\",\"CP\"), criteria = \"Z\")",
+      "files": "edge_conditional"
+    },
+    "edge_fisher": {
+      "call": "edgeList(coin(galapagos), \"Hyp\", criteria = \"Hyp\")",
+      "files": "edge_fisher"
+    },
+    "edge_level90": {
+      "call": "edgeList(coin(dice), \"confidence\", criteria = \"Haberman\", min = 3, level = .90)",
+      "files": "edge_level90"
+    },
+    "edge_shape": {
+      "call": "edgeList(as.matrix(coin(galapagos)), \"shape\")",
+      "files": "edge_shape"
+    },
+    "edge_adjacency": {
+      "call": "edgeList(adjacency, \"shape\")",
+      "files": "edge_adjacency"
+    },
+    "edge_expected_list": {
+      "call": "expectedList(coin(galapagos))",
+      "files": "edge_expected_list"
+    },
+    "edge_expected_list_min2": {
+      "call": "expectedList(coin(galapagos), min = 2)",
+      "files": "edge_expected_list_min2"
+    },
+    "dicho_ess_age": {
+      "call": "dichotomize(ess, \"Age\")",
+      "files": "dicho_ess_age"
+    },
+    "dicho_ess_two": {
+      "call": "dichotomize(ess, c(\"Gender\",\"Age\"))",
+      "files": "dicho_ess_two"
+    },
+    "dicho_kw": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\")",
+      "files": "dicho_kw"
+    },
+    "dicho_kw_min2": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", min = 2)",
+      "files": "dicho_kw_min2"
+    },
+    "dicho_kw_length2": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", length = 2)",
+      "files": "dicho_kw_length2"
+    },
+    "dicho_kw_nosort": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", sort = FALSE)",
+      "files": "dicho_kw_nosort"
+    },
+    "dicho_kw_nas_null": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", nas = NULL)",
+      "files": "dicho_kw_nas_null"
+    },
+    "dicho_kw_nas_label": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", nas = \"Missing\")",
+      "files": "dicho_kw_nas_label"
+    },
+    "dicho_kw_values": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", values = c(\"red\",\"blue\"))",
+      "files": "dicho_kw_values"
+    },
+    "dicho_kw_add": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", add = TRUE)",
+      "files": "dicho_kw_add"
+    },
+    "dicho_kw_spaces": {
+      "call": "dichotomize(txt, \"keywords\", sep = \";\")",
+      "files": "dicho_kw_spaces"
+    },
+    "dicho_words_lower": {
+      "call": "dichotomize(txt, \"sentence\", sep = \" \", text = \"lower\", stopwords = c(\"the\",\"a\",\"and\"))",
+      "files": "dicho_words_lower"
+    },
+    "dicho_two_seps": {
+      "call": "dichotomize(txt, c(\"kw2\",\"colour\"), sep = c(\";\",\"\"))",
+      "files": "dicho_two_seps"
+    },
+    "dicho_regex_pool": {
+      "call": "dichotomize(txt, c(\"kw2\",\"sentence\"), sep = \"[;, ]+\", regex = TRUE, text = \"lower\")",
+      "files": "dicho_regex_pool"
+    }
+  }
+}
