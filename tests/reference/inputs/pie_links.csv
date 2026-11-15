@@ -1,0 +1,10 @@
+"Source","Target","Haberman","Jaccard"
+"Geospiza magnirostris","Certhidea olivacea",NA,0.823529411764706
+"Geospiza fortis","Geospiza fuliginosa",3.44082631271701,0.928571428571429
+"Geospiza fortis","Geospiza scandens",3.54314071888856,0.923076923076923
+"Geospiza fortis","Platyspiza crassirostris",3.09673111356856,0.846153846153846
+"Geospiza fuliginosa","Geospiza scandens",2.95683228182749,0.857142857142857
+"Geospiza fuliginosa","Certhidea olivacea",NA,0.823529411764706
+"Camarhynchus psitticula","Camarhynchus parvulus",3.12177997368194,0.818181818181818
+"Camarhynchus psitticula","Platyspiza crassirostris",3.63960894145968,0.909090909090909
+"Camarhynchus parvulus","Platyspiza crassirostris",3.63960894145968,0.909090909090909

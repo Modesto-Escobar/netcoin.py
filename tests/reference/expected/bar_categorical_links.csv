@@ -1,0 +1,13 @@
+"Source","Target","coincidences","expected"
+"Gender:Female","Age:60-69",99,101.128256513026
+"Gender:Female","Age:40-49",107,94.7074148296593
+"Gender:Female","Age:15-29",85,93.6372745490982
+"Gender:Female","Age:70 and +",89,85.0761523046092
+"Gender:Female","Age:50-59",75,82.4008016032064
+"Gender:Female","Age:30-39",79,77.0501002004008
+"Gender:Male","Age:60-69",90,87.871743486974
+"Gender:Male","Age:40-49",70,82.2925851703407
+"Gender:Male","Age:15-29",90,81.3627254509018
+"Gender:Male","Age:70 and +",70,73.9238476953908
+"Gender:Male","Age:50-59",79,71.5991983967936
+"Gender:Male","Age:30-39",65,66.9498997995992

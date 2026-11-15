@@ -1,0 +1,4 @@
+"Source","Target","coincidences","expected"
+"Certhidea olivacea","Geospiza magnirostris",14,14
+"Certhidea olivacea","Geospiza fortis",13,13
+"Geospiza magnirostris","Geospiza fortis",11,10.7058823529412

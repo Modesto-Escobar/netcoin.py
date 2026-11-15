@@ -322,5 +322,100 @@ write_json(lapply(E$options[intersect(keep, names(E$options))], function(x) unna
 add_case("evo_result", "multigraphCreate(first=, second=, third=, mode = \"frame\", frame = 1, speed = 30, loop = TRUE, lineplots = c(\"v\",\"degree\",\"bogus\"))",
          c("evo_result_nodes", "evo_result_links"))
 
+
+# ------------------------------------------------- bar / time / pie charts ----
+jsonw <- function(x, file) write_json(x, file.path(dir_out, file), auto_unbox = TRUE, na = "null", digits = NA, null = "null")
+plain <- function(o) lapply(o, function(x) if (is.factor(x)) as.character(x) else unname(x))
+write_table <- function(df, name) {
+  df <- as.data.frame(df); rownames(df) <- NULL
+  df[] <- lapply(df, function(x) if (is.factor(x)) as.character(x) else x)
+  write_csv(df, name, dir_out)
+}
+bar_case <- function(id, call_txt, B) {
+  write_table(B$nodes, paste0("bar_", id, "_nodes"))
+  write_table(B$links, paste0("bar_", id, "_links"))
+  jsonw(plain(B$options), paste0("bar_", id, "_options.json"))
+  add_case(paste0("bar_", id), call_txt, paste0("bar_", id, c("_nodes", "_links")))
+}
+ess_f <- ess
+bar_nodes_user <- data.frame(name = c("Geospiza fortis", "Certhidea olivacea", "Geospiza magnirostris", "Missing species"),
+                             label = c("Fortis", "Olivacea", "Magnirostris", "?"), group = c("g", "c", "g", "x"),
+                             stringsAsFactors = FALSE)
+write_csv(bar_nodes_user, "bar_nodes_user", dir_in)
+ess_w <- data.frame(lapply(ess[, 1:4], as.character), check.names = FALSE, stringsAsFactors = FALSE)
+ess_w$cweight <- ess$cweight
+write_csv(ess_w, "ess_cweight", dir_in)
+bar_case("categorical", 'barCoin(ess, c("Gender","Age"), dichotomies = "_none")',
+         barCoin(ess_f, c("Gender", "Age"), dichotomies = "_none"))
+bar_case("full", 'barCoin(ess, 4 variables, dichotomies = c("Social participation","Political participation"), valueDicho = "Yes", expected = TRUE, confidence = TRUE, significance = TRUE, level = .9, percentages = TRUE, language = "es", sort = "incidences", select = "Gender:Male")',
+         barCoin(ess_f, c("Gender", "Age", "Social participation", "Political participation"),
+                 dichotomies = c("Social participation", "Political participation"), valueDicho = "Yes",
+                 expected = TRUE, confidence = TRUE, significance = TRUE, level = .9, percentages = TRUE,
+                 language = "es", sort = "incidences", select = "Gender:Male"))
+bar_case("weight", 'barCoin(ess, c("Gender","Age","cweight"), dichotomies = "_none", weight = "cweight", criteria = "hyp", support = 5, maxL = .6, confidence = TRUE)',
+         barCoin(ess_f, c("Gender", "Age", "cweight"), dichotomies = "_none", weight = "cweight", criteria = "hyp",
+                 support = 5, maxL = .6, confidence = TRUE))
+bar_case("dichotomies", "barCoin(galapagos)", barCoin(galapagos))
+bar_case("nodes", 'barCoin(galapagos, nodes = bar_nodes_user, label = "label", color = "group", expected = TRUE, decreasing = FALSE, sort = "label", scalebar = TRUE, note = "A note", cex = 1.2, defaultColor = "firebrick")',
+         barCoin(galapagos, nodes = bar_nodes_user, label = "label", color = "group", expected = TRUE,
+                 decreasing = FALSE, sort = "label", scalebar = TRUE, note = "A note", cex = 1.2, defaultColor = "firebrick"))
+bar_case("commonlabel", 'barCoin(ess, c("Gender","Age"), dichotomies = "_none", commonlabel = "Gender")',
+         barCoin(ess_f, c("Gender", "Age"), dichotomies = "_none", commonlabel = "Gender"))
+
+# timeline
+data(sociologists, works, package = "netCoin")
+soc <- as.data.frame(sociologists); wrk <- as.data.frame(works)
+write_csv(soc, "soc", dir_in); write_csv(wrk, "wrk", dir_in)
+time_case <- function(id, call_txt, T) {
+  write_table(T$periods, paste0("time_", id, "_periods"))
+  files <- paste0("time_", id, "_periods")
+  if (!is.null(T$events)) { write_table(T$events, paste0("time_", id, "_events")); files <- c(files, paste0("time_", id, "_events")) }
+  jsonw(plain(T$options), paste0("time_", id, "_options.json"))
+  add_case(paste0("time_", id), call_txt, files)
+}
+time_case("periods", 'timeCoin(sociologists, start = "birth", end = "death", group = "school", text = "label", main = "Sociologists", info = "birth_country", language = "es", cex = 1.1)',
+          timeCoin(soc, start = "birth", end = "death", group = "school", text = "label", main = "Sociologists",
+                   info = "birth_country", language = "es", cex = 1.1))
+time_case("events", 'timeCoin(sociologists, start = "birth", end = "death", events = works, eventNames = "works", eventPeriod = "name", eventTime = "date", eventColor = "label", eventShape = "name")',
+          timeCoin(soc, start = "birth", end = "death", events = wrk, eventNames = "works", eventPeriod = "name",
+                   eventTime = "date", eventColor = "label", eventShape = "name"))
+posix <- data.frame(name = c("a", "b", "c"),
+                    start = as.POSIXct(c("2020-01-01 10:00:00", "2020-01-02 12:30:00", "2020-01-03 00:00:00"), tz = "UTC"),
+                    end = as.POSIXct(c("2020-01-05 10:00:00", "2020-01-04 08:15:00", "2020-01-06 18:00:00"), tz = "UTC"))
+write_csv(data.frame(name = posix$name, start = format(posix$start, "%Y-%m-%d %H:%M:%S"), end = format(posix$end, "%Y-%m-%d %H:%M:%S")), "posix", dir_in)
+time_case("posix", "timeCoin(posix)", timeCoin(posix))
+
+# incTime / mobileEdges
+inc <- incTime(soc, "name", "birth", "death")
+write_csv(cbind(year = rownames(inc), inc), "inctime", dir_out)
+add_case("inctime", 'incTime(sociologists, "name", "birth", "death")', "inctime")
+for (d in c(0, 10)) {
+  me <- mobileEdges(soc, "name", "birth", d)
+  write_table(me, paste0("mobile_", d)); add_case(paste0("mobile_", d), sprintf('mobileEdges(sociologists, "name", "birth", %d)', d), paste0("mobile_", d))
+}
+
+# pie
+pie_case <- function(id, call_txt, P) {
+  o <- list(data = P$data, dim = as.integer(P$dim), colnames = P$colnames, rownames = P$rownames,
+            dataw = P$dataw, nodes = P$nodes, links = P$links, options = plain(P$options))
+  for (k in c("nodes", "links")) if (!is.null(o[[k]])) { o[[k]] <- as.data.frame(o[[k]]); rownames(o[[k]]) <- NULL; o[[k]][] <- lapply(o[[k]], function(x) if (is.factor(x)) as.character(x) else x) }
+  write_json(o, file.path(dir_out, paste0("pie_", id, ".json")), auto_unbox = TRUE, na = "null", digits = NA, dataframe = "columns")
+  add_case(paste0("pie_", id), call_txt, paste0("pie_", id, ".json"))
+}
+pie_nodes <- data.frame(name = c("Geospiza fortis", "Certhidea olivacea", "Unknown"), size = c(1, 2, 3), stringsAsFactors = FALSE)
+write_csv(pie_nodes, "pie_nodes", dir_in)
+pie_links <- edgeList(C_gal, c("Haberman", "Jaccard"), criteria = "Jaccard", min = .8)
+write_csv(pie_links, "pie_links", dir_in)
+pie_case("default", "pieCoin(coin(galapagos))", pieCoin(C_gal))
+pie_case("options", 'pieCoin(coin(galapagos), expected = FALSE, abline = 3, main = "Pies", note = "n", language = "es", colors = c("red","#00F","lightblue","gray 50"), cex = 1.2, showLegend = FALSE, helpOn = TRUE, help = "hi")',
+         pieCoin(C_gal, expected = FALSE, abline = 3, main = "Pies", note = "n", language = "es",
+                 colors = c("red", "#00F", "lightblue", "gray 50"), cex = 1.2, showLegend = FALSE, helpOn = TRUE, help = "hi"))
+pie_case("links_column", 'pieCoin(coin(galapagos), nodes = pie_nodes, links = pie_links, lcolor = "Haberman")',
+         pieCoin(C_gal, nodes = pie_nodes, links = pie_links, lcolor = "Haberman"))
+pie_case("links_color", 'pieCoin(coin(galapagos), links = pie_links, lcolor = "firebrick")',
+         pieCoin(C_gal, links = pie_links, lcolor = "firebrick"))
+pie_case("links_numeric", 'pieCoin(coin(galapagos), links = pie_links, lcolor = seq_len(nrow(pie_links)))',
+         pieCoin(C_gal, links = pie_links, lcolor = seq_len(nrow(pie_links))))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

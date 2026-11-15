@@ -135,12 +135,36 @@ multigraphCreate([net1, net2, net3], mode="frame",  # one network that evolves
 
 An existing folder is only replaced if it holds a graph written by this package.
 
+### Bars, timelines and pies
+
+```python
+from netcoin import bar_coin, time_coin, pie_coin, coin
+
+# coincidences of every category with the others (survey data, weighted)
+bar = bar_coin(survey, ["Gender", "Age"], dichotomies="_none", weight="cweight",
+               expected=True, confidence=True, significance=True)
+bar.plot()
+
+# periods (and events on them) on a time axis
+time_coin(people, start="birth", end="death", group="school",
+          events=works, event_names="works", event_period="name", event_time="date").plot()
+
+# a matrix of pies, one per pair of variables
+pie_coin(coin(incidences), main="Coincidences").plot()
+```
+
+Each returns an object (`BarCoin`, `TimeCoin`, `PieCoin`) with its tables and options, which
+can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
+
 ## Main features
 
 | Area                              | Key API                                    |
 |-----------------------------------|--------------------------------------------|
 | Interactive coincidence networks  | `netCoin(...)`, `netCoin.plot(...)`        |
 | Build a network from a matrix     | `netCoin.fromMatrix(...)`                  |
+| Bar charts of coincidences        | `bar_coin(...)`                            |
+| Timelines of periods and events   | `time_coin(...)`, `inc_time(...)`, `mobile_edges(...)` |
+| Pie charts of coincidences        | `pie_coin(...)`                            |
 | Multi-graph visualisations        | `multigraphCreate(...)` (default, parallel, frame) |
 | Coincidences (`Coin` object)      | `coin(...)`                                |
 | Similarity measures (Jaccard, …)  | `sim(...)`                                 |

@@ -532,6 +532,74 @@
     "evo_result": {
       "call": "multigraphCreate(first=, second=, third=, mode = \"frame\", frame = 1, speed = 30, loop = TRUE, lineplots = c(\"v\",\"degree\",\"bogus\"))",
       "files": ["evo_result_nodes", "evo_result_links"]
+    },
+    "bar_categorical": {
+      "call": "barCoin(ess, c(\"Gender\",\"Age\"), dichotomies = \"_none\")",
+      "files": ["bar_categorical_nodes", "bar_categorical_links"]
+    },
+    "bar_full": {
+      "call": "barCoin(ess, 4 variables, dichotomies = c(\"Social participation\",\"Political participation\"), valueDicho = \"Yes\", expected = TRUE, confidence = TRUE, significance = TRUE, level = .9, percentages = TRUE, language = \"es\", sort = \"incidences\", select = \"Gender:Male\")",
+      "files": ["bar_full_nodes", "bar_full_links"]
+    },
+    "bar_weight": {
+      "call": "barCoin(ess, c(\"Gender\",\"Age\",\"cweight\"), dichotomies = \"_none\", weight = \"cweight\", criteria = \"hyp\", support = 5, maxL = .6, confidence = TRUE)",
+      "files": ["bar_weight_nodes", "bar_weight_links"]
+    },
+    "bar_dichotomies": {
+      "call": "barCoin(galapagos)",
+      "files": ["bar_dichotomies_nodes", "bar_dichotomies_links"]
+    },
+    "bar_nodes": {
+      "call": "barCoin(galapagos, nodes = bar_nodes_user, label = \"label\", color = \"group\", expected = TRUE, decreasing = FALSE, sort = \"label\", scalebar = TRUE, note = \"A note\", cex = 1.2, defaultColor = \"firebrick\")",
+      "files": ["bar_nodes_nodes", "bar_nodes_links"]
+    },
+    "bar_commonlabel": {
+      "call": "barCoin(ess, c(\"Gender\",\"Age\"), dichotomies = \"_none\", commonlabel = \"Gender\")",
+      "files": ["bar_commonlabel_nodes", "bar_commonlabel_links"]
+    },
+    "time_periods": {
+      "call": "timeCoin(sociologists, start = \"birth\", end = \"death\", group = \"school\", text = \"label\", main = \"Sociologists\", info = \"birth_country\", language = \"es\", cex = 1.1)",
+      "files": "time_periods_periods"
+    },
+    "time_events": {
+      "call": "timeCoin(sociologists, start = \"birth\", end = \"death\", events = works, eventNames = \"works\", eventPeriod = \"name\", eventTime = \"date\", eventColor = \"label\", eventShape = \"name\")",
+      "files": ["time_events_periods", "time_events_events"]
+    },
+    "time_posix": {
+      "call": "timeCoin(posix)",
+      "files": "time_posix_periods"
+    },
+    "inctime": {
+      "call": "incTime(sociologists, \"name\", \"birth\", \"death\")",
+      "files": "inctime"
+    },
+    "mobile_0": {
+      "call": "mobileEdges(sociologists, \"name\", \"birth\", 0)",
+      "files": "mobile_0"
+    },
+    "mobile_10": {
+      "call": "mobileEdges(sociologists, \"name\", \"birth\", 10)",
+      "files": "mobile_10"
+    },
+    "pie_default": {
+      "call": "pieCoin(coin(galapagos))",
+      "files": "pie_default.json"
+    },
+    "pie_options": {
+      "call": "pieCoin(coin(galapagos), expected = FALSE, abline = 3, main = \"Pies\", note = \"n\", language = \"es\", colors = c(\"red\",\"#00F\",\"lightblue\",\"gray 50\"), cex = 1.2, showLegend = FALSE, helpOn = TRUE, help = \"hi\")",
+      "files": "pie_options.json"
+    },
+    "pie_links_column": {
+      "call": "pieCoin(coin(galapagos), nodes = pie_nodes, links = pie_links, lcolor = \"Haberman\")",
+      "files": "pie_links_column.json"
+    },
+    "pie_links_color": {
+      "call": "pieCoin(coin(galapagos), links = pie_links, lcolor = \"firebrick\")",
+      "files": "pie_links_color.json"
+    },
+    "pie_links_numeric": {
+      "call": "pieCoin(coin(galapagos), links = pie_links, lcolor = seq_len(nrow(pie_links)))",
+      "files": "pie_links_numeric.json"
     }
   }
 }

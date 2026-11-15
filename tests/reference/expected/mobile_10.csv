@@ -1,0 +1,50 @@
+"Source","Target","sim.","dist."
+"Karl Marx","Herbert Spencer",9,2
+"Karl Marx","Friedrich Engels",9,2
+"Herbert Spencer","Friedrich Engels",11,0
+"William Graham Sumner","Vilfredo Pareto",3,8
+"Vilfredo Pareto","Ferdinand Tönnies",4,7
+"Vilfredo Pareto","Thorstein Veblen",2,9
+"Vilfredo Pareto","Émile Durkheim",1,10
+"Vilfredo Pareto","Georg Simmel",1,10
+"Ferdinand Tönnies","Thorstein Veblen",9,2
+"Ferdinand Tönnies","Émile Durkheim",8,3
+"Ferdinand Tönnies","Georg Simmel",8,3
+"Ferdinand Tönnies","George H. Mead",3,8
+"Ferdinand Tönnies","Werner Sombart",3,8
+"Ferdinand Tönnies","Max Weber",2,9
+"Ferdinand Tönnies","Charles Cooley",2,9
+"Ferdinand Tönnies","Robert Ezra Park",2,9
+"Thorstein Veblen","Émile Durkheim",10,1
+"Thorstein Veblen","Georg Simmel",10,1
+"Thorstein Veblen","George H. Mead",5,6
+"Thorstein Veblen","Werner Sombart",5,6
+"Thorstein Veblen","Max Weber",4,7
+"Thorstein Veblen","Charles Cooley",4,7
+"Thorstein Veblen","Robert Ezra Park",4,7
+"Émile Durkheim","Georg Simmel",11,0
+"Émile Durkheim","George H. Mead",6,5
+"Émile Durkheim","Werner Sombart",6,5
+"Émile Durkheim","Max Weber",5,6
+"Émile Durkheim","Charles Cooley",5,6
+"Émile Durkheim","Robert Ezra Park",5,6
+"Georg Simmel","George H. Mead",6,5
+"Georg Simmel","Werner Sombart",6,5
+"Georg Simmel","Max Weber",5,6
+"Georg Simmel","Charles Cooley",5,6
+"Georg Simmel","Robert Ezra Park",5,6
+"George H. Mead","Werner Sombart",11,0
+"George H. Mead","Max Weber",10,1
+"George H. Mead","Charles Cooley",10,1
+"George H. Mead","Robert Ezra Park",10,1
+"George H. Mead","Marcel Mauss",2,9
+"Werner Sombart","Max Weber",10,1
+"Werner Sombart","Charles Cooley",10,1
+"Werner Sombart","Robert Ezra Park",10,1
+"Werner Sombart","Marcel Mauss",2,9
+"Max Weber","Charles Cooley",11,0
+"Max Weber","Robert Ezra Park",11,0
+"Max Weber","Marcel Mauss",3,8
+"Charles Cooley","Robert Ezra Park",11,0
+"Charles Cooley","Marcel Mauss",3,8
+"Robert Ezra Park","Marcel Mauss",3,8
