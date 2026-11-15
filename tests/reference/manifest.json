@@ -1268,6 +1268,210 @@
     "net_gl_options": {
       "call": "glmCoin(\"income ~ Gender + Age\", data, pmax = .2, showArrows = FALSE, main = \"GLM\")",
       "files": ["net_gl_options_nodes", "net_gl_options_links"]
+    },
+    "net_sa_ax_matrix": {
+      "call": "addAxes(N, axes4)",
+      "files": ["net_sa_ax_matrix_nodes", "net_sa_ax_matrix_links"]
+    },
+    "net_sa_ax_named": {
+      "call": "addAxes(N, axes4, name = \"pair\")",
+      "files": ["net_sa_ax_named_nodes", "net_sa_ax_named_links"]
+    },
+    "net_sa_ax_single": {
+      "call": "addAxes(N, axes4[,1:2], name = \"one\")",
+      "files": ["net_sa_ax_single_nodes", "net_sa_ax_single_links"]
+    },
+    "net_sa_ax_twice": {
+      "call": "addAxes(addAxes(N, axes4[,1:2], name = \"one\"), axes4[,3:4], name = \"one\")",
+      "files": ["net_sa_ax_twice_nodes", "net_sa_ax_twice_links"]
+    },
+    "net_sa_ax_cases": {
+      "call": "addAxes(Np, caseAxes)",
+      "files": ["net_sa_ax_cases_nodes", "net_sa_ax_cases_links"]
+    },
+    "net_sa_ax_cases_w": {
+      "call": "addAxes(Np, caseAxes, weight = 1)",
+      "files": ["net_sa_ax_cases_w_nodes", "net_sa_ax_cases_w_links"]
+    },
+    "net_sa_ax_labels": {
+      "call": "addAxes(N, axes4, axesLabels = c(\"X\",\"Y\"))",
+      "files": ["net_sa_ax_labels_nodes", "net_sa_ax_labels_links"]
+    },
+    "net_sa_cl_vec": {
+      "call": "addClusters(N, a, name = \"grp\")",
+      "files": ["net_sa_cl_vec_nodes", "net_sa_cl_vec_links"]
+    },
+    "net_sa_cl_nosort": {
+      "call": "addClusters(N, a, name = \"grp\", sort = FALSE)",
+      "files": ["net_sa_cl_nosort_nodes", "net_sa_cl_nosort_links"]
+    },
+    "net_sa_cl_weight": {
+      "call": "addClusters(N, a, name = \"grp\", weight = v)",
+      "files": ["net_sa_cl_weight_nodes", "net_sa_cl_weight_links"]
+    },
+    "net_sa_cl_df": {
+      "call": "addClusters(N, data.frame(a, b))",
+      "files": ["net_sa_cl_df_nodes", "net_sa_cl_df_links"]
+    },
+    "net_sa_cl_cases": {
+      "call": "addClusters(Np, cases, name = \"g\")",
+      "files": ["net_sa_cl_cases_nodes", "net_sa_cl_cases_links"]
+    },
+    "net_sa_cl_rest": {
+      "call": "addClusters(N, a, name = \"g\", rest = 3)",
+      "files": ["net_sa_cl_rest_nodes", "net_sa_cl_rest_links"]
+    },
+    "net_sa_cl_twice": {
+      "call": "addClusters(addClusters(N, a, name = \"g\"), b, name = \"g\")",
+      "files": ["net_sa_cl_twice_nodes", "net_sa_cl_twice_links"]
+    },
+    "net_sa_cl_replace": {
+      "call": "replaceClusters(addClusters(N, a, name = \"g\"), b)",
+      "files": ["net_sa_cl_replace_nodes", "net_sa_cl_replace_links"]
+    },
+    "net_sa_cl_maxgroups": {
+      "call": "addClusters(N, 1:40)",
+      "files": ["net_sa_cl_maxgroups_nodes", "net_sa_cl_maxgroups_links"]
+    },
+    "net_sa_cl_axes_then": {
+      "call": "addClusters(addAxes(N, axes4, name = \"p\"), a, name = \"g\")",
+      "files": ["net_sa_cl_axes_then_nodes", "net_sa_cl_axes_then_links"]
+    },
+    "net_sa_cl_after_axes_cases": {
+      "call": "addAxes(addClusters(Np, cases, name = \"g\"), caseAxes)",
+      "files": ["net_sa_cl_after_axes_cases_nodes", "net_sa_cl_after_axes_cases_links"]
+    },
+    "net_sa_al_proc": {
+      "call": "layoutsAlign(addAxes(N, axes4[,3:4], name = \"B\"))",
+      "files": ["net_sa_al_proc_nodes", "net_sa_al_proc_links"]
+    },
+    "net_sa_al_proc3": {
+      "call": "layoutsAlign(N with 3 planes, to = 1)",
+      "files": ["net_sa_al_proc3_nodes", "net_sa_al_proc3_links"]
+    },
+    "net_sa_al_to2": {
+      "call": "layoutsAlign(N with 3 planes, to = 2)",
+      "files": ["net_sa_al_to2_nodes", "net_sa_al_to2_links"]
+    },
+    "net_sa_al_suffix": {
+      "call": "layoutsAlign(N with 3 planes, suffix = \"*\")",
+      "files": ["net_sa_al_suffix_nodes", "net_sa_al_suffix_links"]
+    },
+    "net_sa_al_gpa": {
+      "call": "layoutsAlign(N with 3 planes, gpa = TRUE)",
+      "files": ["net_sa_al_gpa_nodes", "net_sa_al_gpa_links"]
+    },
+    "net_sa_al_gpa_suffix": {
+      "call": "layoutsAlign(N with 3 planes, gpa = TRUE, suffix = \"~\")",
+      "files": ["net_sa_al_gpa_suffix_nodes", "net_sa_al_gpa_suffix_links"]
+    },
+    "net_sa_al_cloud": {
+      "call": "layoutsAlign(N with 3 planes, align = \"cloud\")",
+      "files": ["net_sa_al_cloud_nodes", "net_sa_al_cloud_links"]
+    },
+    "net_sa_al_canvas": {
+      "call": "layoutsAlign(N with 3 planes, align = \"canvas\")",
+      "files": ["net_sa_al_canvas_nodes", "net_sa_al_canvas_links"]
+    },
+    "net_sa_al_none": {
+      "call": "layoutsAlign(N with 3 planes, align = \"none\")",
+      "files": ["net_sa_al_none_nodes", "net_sa_al_none_links"]
+    },
+    "net_sa_al_weights": {
+      "call": "layoutsAlign(N with 3 planes, weights = \"v\")",
+      "files": ["net_sa_al_weights_nodes", "net_sa_al_weights_links"]
+    },
+    "net_sa_al_which": {
+      "call": "layoutsAlign(N with 3 planes, which = 2:3)",
+      "files": ["net_sa_al_which_nodes", "net_sa_al_which_links"]
+    },
+    "net_sa_al_clusters": {
+      "call": "layoutsAlign(addClusters(N with 3 planes, a), suffix = \"*\")",
+      "files": ["net_sa_al_clusters_nodes", "net_sa_al_clusters_links"]
+    },
+    "net_sa_al_cases": {
+      "call": "layoutsAlign(Np with 2 planes)",
+      "files": ["net_sa_al_cases_nodes", "net_sa_al_cases_links"]
+    },
+    "cm_match_basic": {
+      "call": "clusterMatch(N, \"a\")",
+      "files": "cm_match_basic"
+    },
+    "cm_match_noalign": {
+      "call": "clusterMatch(N, \"a\", align = FALSE)",
+      "files": "cm_match_noalign"
+    },
+    "cm_match_unweighted": {
+      "call": "clusterMatch(N, \"a\", weighted = FALSE)",
+      "files": "cm_match_unweighted"
+    },
+    "cm_match_sort": {
+      "call": "clusterMatch(N, \"a\", sort = \"-Accuracy\")",
+      "files": "cm_match_sort"
+    },
+    "cm_match_sort2": {
+      "call": "clusterMatch(N, \"a\", sort = c(\"F1\", \"Kappa\"))",
+      "files": "cm_match_sort2"
+    },
+    "cm_match_digits": {
+      "call": "clusterMatch(N, \"a\", digits = 1)",
+      "files": "cm_match_digits"
+    },
+    "cm_match_weights": {
+      "call": "clusterMatch(N, \"a\", weights = \"v\")",
+      "files": "cm_match_weights"
+    },
+    "cm_match_columns": {
+      "call": "clusterMatch(N, \"a\", columns = c(\"b\", \"d\", \"m3\", \"txt\"))",
+      "files": "cm_match_columns"
+    },
+    "cm_match_vector": {
+      "call": "clusterMatch(N, vec)",
+      "files": "cm_match_vector"
+    },
+    "cm_match_factor_model": {
+      "call": "clusterMatch(N, \"m3\", columns = c(\"a\", \"b\", \"d\"))",
+      "files": "cm_match_factor_model"
+    },
+    "cm_match_patterns": {
+      "call": "clusterMatch(Np, \"g1\")",
+      "files": "cm_match_patterns"
+    },
+    "cm_match_cases": {
+      "call": "clusterMatch(Np, case_model)",
+      "files": "cm_match_cases"
+    },
+    "cm_match_cases_w": {
+      "call": "clusterMatch(Np, case_model, weights = 1)",
+      "files": "cm_match_cases_w"
+    },
+    "cm_agree_basic": {
+      "call": "clusterAgree(N, \"a\")",
+      "files": "cm_agree_basic"
+    },
+    "cm_agree_sort": {
+      "call": "clusterAgree(N, \"a\", sort = \"-VI\")",
+      "files": "cm_agree_sort"
+    },
+    "cm_agree_weights": {
+      "call": "clusterAgree(N, \"a\", weights = \"v\", digits = 4)",
+      "files": "cm_agree_weights"
+    },
+    "cm_agree_vector": {
+      "call": "clusterAgree(N, vec)",
+      "files": "cm_agree_vector"
+    },
+    "cm_agree_patterns": {
+      "call": "clusterAgree(Np, \"g1\")",
+      "files": "cm_agree_patterns"
+    },
+    "cm_agree_patterns_cases": {
+      "call": "clusterAgree(Np, case_model)",
+      "files": "cm_agree_patterns_cases"
+    },
+    "cm_agree_columns": {
+      "call": "clusterAgree(N, \"c\", columns = c(\"a\", \"b\"))",
+      "files": "cm_agree_columns"
     }
   }
 }

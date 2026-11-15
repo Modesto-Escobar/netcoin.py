@@ -919,5 +919,122 @@ cls ~ edu + Gender, multinomial", data, pmax = .9)',
 cls ~ edu + Gender, multinomial", gdf, pmax = .9))
 gl_case("options", 'glmCoin("income ~ Gender + Age", data, pmax = .2, showArrows = FALSE, main = "GLM")', glmCoin("income ~ Gender + Age", gdf, pmax = .2, showArrows = FALSE, main = "GLM"))
 
+# ------------------------------------------- scattergram tools (addAxes...) ----
+set.seed(21)
+sa_n <- 40
+sa_nodes <- data.frame(name = sprintf("%02d", 1:sa_n), v = round(runif(sa_n, 1, 10), 2), g = sample(c("a", "b", "c"), sa_n, TRUE), stringsAsFactors = FALSE)
+sa_xy <- round(cbind(x = rnorm(sa_n), y = rnorm(sa_n)), 3)
+sa_axes <- round(cbind(A1 = rnorm(sa_n), A2 = rnorm(sa_n), B1 = rnorm(sa_n), B2 = rnorm(sa_n)), 3)
+sa_idx <- c(1:sa_n, sample(sa_n, 60, TRUE)); sa_cw <- round(runif(100, .5, 2), 2)
+sa_case_axes <- round(cbind(C1 = rnorm(100), C2 = rnorm(100)), 3)
+sa_cl_a <- sample(1:3, sa_n, TRUE); sa_cl_b <- sample(1:4, sa_n, TRUE); sa_cl_cases <- sample(1:3, 100, TRUE)
+write_csv(cbind(sa_nodes, sa_xy), "sa_base", dir_in); write_csv(as.data.frame(sa_axes), "sa_axes", dir_in)
+write_csv(data.frame(idx = sa_idx, w = sa_cw, as.data.frame(sa_case_axes), cl = sa_cl_cases), "sa_cases", dir_in)
+write_csv(data.frame(a = sa_cl_a, b = sa_cl_b), "sa_clusters", dir_in)
+sa_base <- function(patterns = FALSE) {
+  N <- netCoin(sa_nodes, layout = sa_xy, size = "v", axesLabels = c("PC1 (60.0%)", "PC2 (25.0%)"))
+  attr(N, "planeName") <- "PCA"
+  if (patterns) { attr(N, "caseToPattern") <- sa_idx; attr(N, "caseWeight") <- sa_cw }
+  N
+}
+sa_case <- function(id, call_txt, expr) {
+  tryCatch({
+    N <- suppressMessages(suppressWarnings(expr))
+    net_case(paste0("sa_", id), call_txt, N)
+    info <- list(layouts = lapply(N$layouts, function(m) list(names = colnames(m), data = unname(split(unname(m), row(m))))),
+                 clusters = lapply(N$clusters, function(m) { m <- as.matrix(m); list(rows = rownames(m), cols = colnames(m), data = unname(split(unname(m), row(m)))) }),
+                 clusterColumns = attr(N, "clusterColumns"), shares = lapply(attr(N, "clusterShares"), function(m) unname(split(unname(m), row(m)))),
+                 layoutsAxesLabels = N$options$layoutsAxesLabels, axesLabels = N$options$axesLabels)
+    cm <- N$clusterMeans
+    if (length(cm)) info$clusterMeans <- lapply(cm, function(d) list(rows = rownames(d), cols = colnames(d), data = unname(split(unname(as.matrix(d)), row(as.matrix(d))))))
+    write_json(info, file.path(dir_out, paste0("sa_", id, "_info.json")), auto_unbox = TRUE, digits = NA, na = "null")
+  }, error = function(e) message("scattergram case ", id, " FAILED: ", conditionMessage(e)))
+}
+N0 <- sa_base(); Np <- sa_base(TRUE)
+sa_case("ax_matrix", "addAxes(N, axes4)", addAxes(N0, sa_axes))
+sa_case("ax_named", 'addAxes(N, axes4, name = "pair")', addAxes(N0, sa_axes, name = "pair"))
+sa_case("ax_single", 'addAxes(N, axes4[,1:2], name = "one")', addAxes(N0, sa_axes[, 1:2], name = "one"))
+sa_case("ax_twice", 'addAxes(addAxes(N, axes4[,1:2], name = "one"), axes4[,3:4], name = "one")',
+        addAxes(addAxes(N0, sa_axes[, 1:2], name = "one"), sa_axes[, 3:4], name = "one"))
+sa_case("ax_cases", "addAxes(Np, caseAxes)", addAxes(Np, sa_case_axes))
+sa_case("ax_cases_w", "addAxes(Np, caseAxes, weight = 1)", addAxes(Np, sa_case_axes, weight = rep(1, 100)))
+sa_case("ax_labels", 'addAxes(N, axes4, axesLabels = c("X","Y"))', addAxes(N0, sa_axes, axesLabels = c("X", "Y")))
+sa_case("cl_vec", 'addClusters(N, a, name = "grp")', addClusters(N0, sa_cl_a, name = "grp"))
+sa_case("cl_nosort", 'addClusters(N, a, name = "grp", sort = FALSE)', addClusters(N0, sa_cl_a, name = "grp", sort = FALSE))
+sa_case("cl_weight", 'addClusters(N, a, name = "grp", weight = v)', addClusters(N0, sa_cl_a, name = "grp", weight = sa_nodes$v))
+sa_case("cl_df", "addClusters(N, data.frame(a, b))", addClusters(N0, data.frame(a = sa_cl_a, b = sa_cl_b)))
+sa_case("cl_cases", 'addClusters(Np, cases, name = "g")', addClusters(Np, sa_cl_cases, name = "g"))
+sa_case("cl_rest", 'addClusters(N, a, name = "g", rest = 3)', addClusters(N0, sa_cl_a, name = "g", rest = 3))
+sa_case("cl_twice", 'addClusters(addClusters(N, a, name = "g"), b, name = "g")', addClusters(addClusters(N0, sa_cl_a, name = "g"), sa_cl_b, name = "g"))
+sa_case("cl_replace", 'replaceClusters(addClusters(N, a, name = "g"), b)', replaceClusters(addClusters(N0, sa_cl_a, name = "g"), sa_cl_b))
+sa_case("cl_maxgroups", "addClusters(N, 1:40)", addClusters(N0, 1:sa_n))
+sa_case("cl_axes_then", 'addClusters(addAxes(N, axes4, name = "p"), a, name = "g")', addClusters(addAxes(N0, sa_axes, name = "p"), sa_cl_a, name = "g"))
+sa_case("cl_after_axes_cases", 'addAxes(addClusters(Np, cases, name = "g"), caseAxes)', addAxes(addClusters(Np, sa_cl_cases, name = "g"), sa_case_axes))
+sa3 <- addAxes(N0, sa_axes, name = "p")
+sa_case("al_proc", 'layoutsAlign(addAxes(N, axes4[,3:4], name = "B"))', layoutsAlign(addAxes(N0, sa_axes[, 3:4], name = "B")))
+sa_case("al_proc3", "layoutsAlign(N with 3 planes, to = 1)", layoutsAlign(sa3))
+sa_case("al_to2", "layoutsAlign(N with 3 planes, to = 2)", layoutsAlign(sa3, to = 2))
+sa_case("al_suffix", 'layoutsAlign(N with 3 planes, suffix = "*")', layoutsAlign(sa3, suffix = "*"))
+sa_case("al_gpa", "layoutsAlign(N with 3 planes, gpa = TRUE)", layoutsAlign(sa3, gpa = TRUE))
+sa_case("al_gpa_suffix", 'layoutsAlign(N with 3 planes, gpa = TRUE, suffix = "~")', layoutsAlign(sa3, gpa = TRUE, suffix = "~"))
+sa_case("al_cloud", 'layoutsAlign(N with 3 planes, align = "cloud")', layoutsAlign(sa3, align = "cloud"))
+sa_case("al_canvas", 'layoutsAlign(N with 3 planes, align = "canvas")', layoutsAlign(sa3, align = "canvas"))
+sa_case("al_none", 'layoutsAlign(N with 3 planes, align = "none")', layoutsAlign(sa3, align = "none"))
+sa_case("al_weights", 'layoutsAlign(N with 3 planes, weights = "v")', layoutsAlign(sa3, weights = "v"))
+sa_case("al_which", "layoutsAlign(N with 3 planes, which = 2:3)", layoutsAlign(sa3, which = 2:3))
+sa_case("al_clusters", 'layoutsAlign(addClusters(N with 3 planes, a), suffix = "*")', layoutsAlign(addClusters(sa3, sa_cl_a, name = "g"), suffix = "*"))
+sa_case("al_cases", 'layoutsAlign(Np with 2 planes)', layoutsAlign(addAxes(Np, sa_case_axes)))
+
+# ------------------------------------------------- clusterMatch / clusterAgree ----
+set.seed(33)
+cm_a <- sa_cl_a
+cm_b <- ifelse(runif(sa_n) < .75, sa_cl_a, sample(1:3, sa_n, TRUE))        # a noisy copy of a (3 groups)
+cm_c <- sa_cl_b                                                                 # 4 groups
+cm_d <- sample(1:3, sa_n, TRUE)
+Nm <- suppressMessages(suppressWarnings(addClusters(N0, data.frame(a = cm_a, b = cm_b, c = cm_c, d = cm_d))))
+Nm$nodes$m3 <- factor(sample(c("x", "y", "z"), sa_n, TRUE))
+Nm$nodes$txt <- sample(c("p", "q", "r"), sa_n, TRUE)
+Npm <- suppressMessages(suppressWarnings(addClusters(Np, data.frame(g1 = sa_cl_cases, g2 = sample(1:3, 100, TRUE), g4 = sample(1:4, 100, TRUE)))))
+for (cc in attr(Npm, "clusterColumns")) Npm$nodes[[cc]] <- as.character(Npm$nodes[[cc]])   # modal groups need text
+cm_vec <- sample(c("u", "v", "w"), sa_n, TRUE); cm_cases <- sample(1:3, 100, TRUE)
+write_csv(data.frame(a = cm_a, b = cm_b, c = cm_c, d = cm_d, m3 = as.character(Nm$nodes$m3), txt = Nm$nodes$txt, vec = cm_vec), "cm_nodes", dir_in)
+write_csv(data.frame(g1 = as.character(Npm$nodes[[ncol(Npm$nodes) - 2]]), g2 = as.character(Npm$nodes[[ncol(Npm$nodes) - 1]]), g4 = as.character(Npm$nodes[[ncol(Npm$nodes)]])), "cm_pattern_nodes", dir_in)
+write_csv(data.frame(case_model = cm_cases), "cm_case_model", dir_in)
+cm_out <- function(id, call_txt, res) {
+  rownames(res) <- NULL
+  write_csv(res, paste0("cm_", id), dir_out)
+  info <- list(model = attr(res, "model"), unit = attr(res, "unit"), kModel = attr(res, "kModel"), weights = attr(res, "weights"),
+               spanning = as.list(attr(res, "spanning")),
+               tables = lapply(attr(res, "tables"), function(m) list(rows = rownames(m), cols = colnames(m), data = unname(split(unname(unclass(m)), row(m))),
+                                                                       n = attr(m, "n"), rowsUsed = attr(m, "rows"), dropped = attr(m, "dropped"))),
+               byClass = lapply(attr(res, "byClass"), function(m) list(rows = rownames(m), cols = colnames(m), data = unname(split(unname(m), row(m))))),
+               mapping = lapply(attr(res, "mapping"), as.list))
+  write_json(info, file.path(dir_out, paste0("cm_", id, "_info.json")), auto_unbox = TRUE, digits = NA, na = "null")
+  add_case(paste0("cm_", id), call_txt, paste0("cm_", id))
+}
+cm_case <- function(id, call_txt, expr) tryCatch(cm_out(id, call_txt, suppressMessages(suppressWarnings(expr))),
+                                               error = function(e) message("cluster case ", id, " FAILED: ", conditionMessage(e)))
+cm_case("match_basic", 'clusterMatch(N, "a")', clusterMatch(Nm, "a"))
+cm_case("match_noalign", 'clusterMatch(N, "a", align = FALSE)', clusterMatch(Nm, "a", align = FALSE))
+cm_case("match_unweighted", 'clusterMatch(N, "a", weighted = FALSE)', clusterMatch(Nm, "a", weighted = FALSE))
+cm_case("match_sort", 'clusterMatch(N, "a", sort = "-Accuracy")', clusterMatch(Nm, "a", sort = "-Accuracy"))
+cm_case("match_sort2", 'clusterMatch(N, "a", sort = c("F1", "Kappa"))', clusterMatch(Nm, "a", sort = c("F1", "Kappa")))
+cm_case("match_digits", 'clusterMatch(N, "a", digits = 1)', clusterMatch(Nm, "a", digits = 1))
+cm_case("match_weights", 'clusterMatch(N, "a", weights = "v")', clusterMatch(Nm, "a", weights = "v"))
+cm_case("match_columns", 'clusterMatch(N, "a", columns = c("b", "d", "m3", "txt"))', clusterMatch(Nm, "a", columns = c("b", "d", "m3", "txt")))
+cm_case("match_vector", "clusterMatch(N, vec)", clusterMatch(Nm, cm_vec))
+cm_case("match_factor_model", 'clusterMatch(N, "m3", columns = c("a", "b", "d"))', clusterMatch(Nm, "m3", columns = c("a", "b", "d")))
+cm_case("match_patterns", 'clusterMatch(Np, "g1")', clusterMatch(Npm, "g1"))
+cm_case("match_patterns_modal", 'clusterMatch(Np, "g1", modal = FALSE)', clusterMatch(Npm, "g1", modal = FALSE))
+cm_case("match_cases", "clusterMatch(Np, case_model)", clusterMatch(Npm, cm_cases))
+cm_case("match_cases_w", "clusterMatch(Np, case_model, weights = 1)", clusterMatch(Npm, cm_cases, weights = sa_cw))
+cm_case("agree_basic", 'clusterAgree(N, "a")', clusterAgree(Nm, "a"))
+cm_case("agree_sort", 'clusterAgree(N, "a", sort = "-VI")', clusterAgree(Nm, "a", sort = "-VI"))
+cm_case("agree_weights", 'clusterAgree(N, "a", weights = "v", digits = 4)', clusterAgree(Nm, "a", weights = "v", digits = 4))
+cm_case("agree_vector", "clusterAgree(N, vec)", clusterAgree(Nm, cm_vec))
+cm_case("agree_patterns", 'clusterAgree(Np, "g1")', clusterAgree(Npm, "g1"))
+cm_case("agree_patterns_cases", "clusterAgree(Np, case_model)", clusterAgree(Npm, cm_cases))
+cm_case("agree_columns", 'clusterAgree(N, "c", columns = c("a", "b"))', clusterAgree(Nm, "c", columns = c("a", "b")))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

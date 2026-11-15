@@ -1,0 +1,3 @@
+"Classification","k","N","Accuracy","Kappa","Sensitivity","Precision","F1","F1.w","Specificity","Specificity.w"
+"d",3,40,0.4,0.106,0.398,0.409,0.386,0.409,0.707,0.722
+"b",3,40,0.775,0.656,0.801,0.785,0.783,0.776,0.885,0.881

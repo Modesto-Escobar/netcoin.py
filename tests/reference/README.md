@@ -57,6 +57,9 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 | `caring(valueDicho = 1)` with several dichotomies | `surCoin` recycles the value, but the `logCoin` and `glmCoin` branches read `valueDicho[i]`, which is `NA` from the second dichotomy on (`Works:NA`). Python recycles it everywhere. |
 | `caring_read_file` | A text column whose levels are all numbers is turned into `as.numeric(factor)`, that is, into the codes 1, 2, ... of its levels, not into its values. Python converts it to its numbers. |
 | `glmCoin` with collinear terms | A term that is a combination of others (all the dummies of a variable next to the constant, as `caring` builds them) gets an `NA` coefficient, and `netCoin` then stops with "valor ausente donde TRUE/FALSE es necesario". Python leaves the aliased terms out of the fit and gives them a link with `NaN` (hidden), as it does not stop. |
+| `clusterMatch(...)$mapping` | After matching, `rownames(m) <- colnames(m)` runs before the mapping is built, so `Predicted` repeats `Model`. Python returns the real predicted names. |
+| `clusterMatch` / `clusterAgree` with patterns | The modal group is only taken for character columns, and `surScat`/`addClusters` store the groups as factors, so with the objects R itself builds the patterns that span several groups are never made modal (the reference uses text columns, where it works). Python takes the modal group also from factors. |
+| optimal assignment (`clue::solve_LSAP`) | When several matchings of the categories are equally good, R's algorithm and scipy's may choose different ones; `attrs["ties"]` of the result names those classifications, and the tests compare only the invariants (N, accuracy...) there. |
 | group numbers of communities | The numbers `G.1`, `G.2`... come from the algorithm's internals; the groups are the same but may be numbered differently (the tests compare the partition). |
 
 ### Replicated on purpose

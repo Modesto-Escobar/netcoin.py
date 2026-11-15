@@ -12,6 +12,8 @@ from .clusters import Looking4Clusters, looking4clusters
 from .surscat import sur_scat
 from .glmcoin import glm_coin
 from .caring import caring, caring_read_file, caring_create_graphs
+from .scattools import add_axes, add_clusters, replace_clusters, layouts_align
+from .clustermatch import cluster_match, cluster_agree
 from .barplot import BarCoin, bar_coin
 from .timeline import TimeCoin, time_coin, inc_time, mobile_edges
 from .pie import PieCoin, pie_coin
