@@ -116,11 +116,12 @@ sim_codes <- c(matching = "M", Rogers = "T", Gower = "G", Sneath = "S", Anderber
                Fisher = "W", coincidences = "F", relative = "X", sConditional = "I",
                tConditional = "0", c.conditional = "U", c.probable = "Q")
 
-sim_case <- function(ds, C, proc, extra = "", level = NULL, suffix = "") {
+# runner(codes) calls sim() with those method codes
+sim_case <- function(ds, proc, runner, call_txt, suffix = "") {
   code <- sim_codes[[proc]]
   # sim(C, "L") alone returns a single matrix, so it is asked together with "J"
   codes <- if (code == "L") c("L", "J") else code
-  r <- if (is.null(level)) sim(C, codes) else sim(C, codes, level = level)
+  r <- runner(codes)
   if (code == "L") r <- r[c("conf.L", "confidence", "conf.U")]
   if (!is.list(r)) r <- setNames(list(r), proc)
   files <- character()
@@ -129,18 +130,30 @@ sim_case <- function(ds, C, proc, extra = "", level = NULL, suffix = "") {
     write_matrix(r[[nm]], f)
     files <- c(files, f)
   }
-  add_case(paste0("sim_", ds, "_", proc, suffix),
-           sprintf("sim(coin(%s), \"%s\"%s)", ds, code, extra), files)
+  add_case(paste0("sim_", ds, "_", proc, suffix), sprintf(call_txt, code), files)
 }
 for (p in sim_procs) {
-  sim_case("galapagos", C_gal, p)
-  sim_case("dice", C_dice, p)
+  sim_case("galapagos", p, function(cd) sim(C_gal, cd),   "sim(coin(galapagos), \"%s\")")
+  sim_case("dice",      p, function(cd) sim(C_dice, cd),  "sim(coin(dice), \"%s\")")
 }
-sim_case("galapagos", C_gal, "confidence", ", level = .90", level = .90, suffix = "_l90")
+sim_case("galapagos", "confidence", function(cd) sim(C_gal, cd, level = .90),
+         "sim(coin(galapagos), \"%s\", level = .90)", suffix = "_l90")
 # sim() on the incidence data frame (computes coin internally)
 r <- sim(galapagos, "J", minimum = 3)
 write_matrix(r, "sim_galapagos_Jaccard_min3")
 add_case("sim_galapagos_Jaccard_min3", "sim(galapagos, \"J\", minimum = 3)", "sim_galapagos_Jaccard_min3")
+# distances
+sim_case("galapagos", "Jaccard", function(cd) sim(C_gal, cd, distance = TRUE) , "sim(coin(galapagos), \"%s\", distance = TRUE)", suffix = "_dist")
+# missing values treated pairwise, and weighted cases
+C_pw <- coin(galapagos_na, pairwise = TRUE)
+for (p in c("Jaccard", "Haberman", "Z", "expected", "confidence", "Fisher", "c.conditional", "Pearson")) {
+  sim_case("galapagos_na", p, function(cd) sim(C_pw, cd, pairwise = TRUE),
+           "sim(coin(galapagos_na, pairwise = TRUE), \"%s\", pairwise = TRUE)", suffix = "_pairwise")
+}
+for (p in c("Jaccard", "Haberman", "Z", "expected", "confidence", "Fisher")) {
+  sim_case("galapagos", p, function(cd) sim(galapagos, cd, weight = weights),
+           "sim(galapagos, \"%s\", weight = weights)", suffix = "_weight")
+}
 
 # -------------------------------------------------------------- edgeList ----
 edge_case <- function(id, call_txt, E) {

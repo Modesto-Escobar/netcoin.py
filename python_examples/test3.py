@@ -36,8 +36,8 @@ incidencia=nc.dichotomize(df, variables="texto2", sep=" ")
 
 aa = nc.coin(incidencia)
 
-bb = nc.sim(aa)
+bb = nc.sim(aa)  # Jaccard by default
 
-nc.edge_list(aa, procedures=["j", "d"])
+nc.edge_list(aa, procedures=["Jaccard", "dice"], criteria="Jaccard", min=0)
 
-nc.sim(aa, procedures="h")
+nc.sim(aa, procedures="Haberman")

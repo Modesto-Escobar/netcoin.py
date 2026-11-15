@@ -88,30 +88,27 @@ net = netCoin(
 net.plot(directory="output/network")   # writes an interactive HTML file
 ```
 
-### Coincidence analysis from a binary DataFrame
+### From raw data to a coincidence network
 
 ```python
 import pandas as pd
-from netcoin import coin
+from netcoin import dichotomize, coin, sim, edge_list, netCoin
 
-df = pd.DataFrame({
-    "feature_1": [1, 0, 1, 1],
-    "feature_2": [1, 1, 0, 1],
-    "feature_3": [0, 1, 1, 0],
-})
+data = pd.DataFrame({"keywords": ["red;blue", "blue;green", "red", "red;green"]})
 
-cooc = coin(df)   # co-occurrence matrix (lower-triangular by default)
-print(cooc)
+incidences = dichotomize(data, "keywords", sep=";", nas=None)  # 0/1 columns
+cooc = coin(incidences)          # a Coin object: coincidences + n
+print(cooc)                      # n= 4, lower triangle
+
+similarities = sim(cooc, "Jaccard")              # square DataFrame
+edges = edge_list(cooc, ["Jaccard", "Haberman"], criteria="Jaccard", min=0)
 ```
 
-### Similarity-based edge lists
-
-```python
-from netcoin import sim, edge_list
-
-similarities = sim(df, procedures="j")     # Jaccard
-edges        = edge_list(df, procedures="j", criteria="j", min=0)
-```
+`coin()` returns a `Coin` object (the coincidence matrix in `.matrix` and the
+number of cases in `.n`), which `sim()` and `edge_list()` take as input. Both
+also accept the table of incidences directly. Procedure names follow the R
+package: `"Jaccard"`, `"Haberman"`, `"Z"`, `"confidence"`... or their short
+forms (`"J"`, `"H"`, `"Ham"`, `"CC"`, `"Hyp"`).
 
 ## Main features
 
@@ -120,9 +117,10 @@ edges        = edge_list(df, procedures="j", criteria="j", min=0)
 | Interactive coincidence networks  | `netCoin(...)`, `netCoin.plot(...)`        |
 | Build a network from a matrix     | `netCoin.fromMatrix(...)`                  |
 | Multi-graph visualisations        | `multigraphCreate(...)`                    |
-| Co-occurrence matrices            | `coin(...)`                                |
+| Coincidences (`Coin` object)      | `coin(...)`                                |
 | Similarity measures (Jaccard, …)  | `sim(...)`                                 |
-| Edge lists from binary data       | `edge_list(...)`                           |
+| Observed vs expected coincidences | `expected_list(...)`                       |
+| Edge lists                        | `edge_list(...)`                           |
 | Dichotomising categorical data    | `dichotomize(...)`                         |
 
 Visualisations are powered by D3.js. All required web assets (`d3.min.js`,

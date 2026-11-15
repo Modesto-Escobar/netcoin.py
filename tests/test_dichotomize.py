@@ -104,5 +104,5 @@ def test_separator_sequence_is_recycled():
 def test_feeds_coin():
     data = pd.DataFrame({"s": ["a;b", "a", "b;c", "a;c"]})
     inc = dichotomize(data, "s", sep=";", nas=None)
-    cooc = coin(inc, print_n=False)
-    assert cooc.loc["a", "a"] == 3
+    cooc = coin(inc)
+    assert cooc.matrix.loc["a", "a"] == 3

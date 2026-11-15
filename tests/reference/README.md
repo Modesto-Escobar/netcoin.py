@@ -31,3 +31,5 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 | `dichotomize` empty tokens | `"a;;b"`, or `sep = "C"` with a `""` value, keeps an empty term that ends up as an unnamed column (`V3`). Python drops empty tokens. |
 | `edgeList(..., criteria = "Fisher")` | The p-value cap (`max = .5`) is applied for `"Z"` and `"Hyp"` but not for `"Fisher"`. |
 | `sim(coin, "L")` alone | Returns a single matrix instead of `conf.L`, `confidence`, `conf.U`. |
+| `coin(total = TRUE)` | The `Total` variable is listed twice (it is added and also passes the frequency filter). Python lists it once. |
+| `coin(weight = w)` | Overwrites a user-given `maximum` with `sum(w)`. Python honours `maximum` and defaults to `sum(w)`. |

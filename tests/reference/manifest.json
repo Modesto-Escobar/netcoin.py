@@ -265,6 +265,66 @@
       "call": "sim(galapagos, \"J\", minimum = 3)",
       "files": "sim_galapagos_Jaccard_min3"
     },
+    "sim_galapagos_Jaccard_dist": {
+      "call": "sim(coin(galapagos), \"J\", distance = TRUE)",
+      "files": "sim_galapagos_Jaccard_dist"
+    },
+    "sim_galapagos_na_Jaccard_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"J\", pairwise = TRUE)",
+      "files": "sim_galapagos_na_Jaccard_pairwise"
+    },
+    "sim_galapagos_na_Haberman_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"H\", pairwise = TRUE)",
+      "files": "sim_galapagos_na_Haberman_pairwise"
+    },
+    "sim_galapagos_na_Z_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"Z\", pairwise = TRUE)",
+      "files": "sim_galapagos_na_Z_pairwise"
+    },
+    "sim_galapagos_na_expected_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"E\", pairwise = TRUE)",
+      "files": "sim_galapagos_na_expected_pairwise"
+    },
+    "sim_galapagos_na_confidence_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"L\", pairwise = TRUE)",
+      "files": ["sim_galapagos_na_conf.L_pairwise", "sim_galapagos_na_confidence_pairwise", "sim_galapagos_na_conf.U_pairwise"]
+    },
+    "sim_galapagos_na_Fisher_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"W\", pairwise = TRUE)",
+      "files": "sim_galapagos_na_Fisher_pairwise"
+    },
+    "sim_galapagos_na_c.conditional_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"U\", pairwise = TRUE)",
+      "files": "sim_galapagos_na_c.conditional_pairwise"
+    },
+    "sim_galapagos_na_Pearson_pairwise": {
+      "call": "sim(coin(galapagos_na, pairwise = TRUE), \"P\", pairwise = TRUE)",
+      "files": "sim_galapagos_na_Pearson_pairwise"
+    },
+    "sim_galapagos_Jaccard_weight": {
+      "call": "sim(galapagos, \"J\", weight = weights)",
+      "files": "sim_galapagos_Jaccard_weight"
+    },
+    "sim_galapagos_Haberman_weight": {
+      "call": "sim(galapagos, \"H\", weight = weights)",
+      "files": "sim_galapagos_Haberman_weight"
+    },
+    "sim_galapagos_Z_weight": {
+      "call": "sim(galapagos, \"Z\", weight = weights)",
+      "files": "sim_galapagos_Z_weight"
+    },
+    "sim_galapagos_expected_weight": {
+      "call": "sim(galapagos, \"E\", weight = weights)",
+      "files": "sim_galapagos_expected_weight"
+    },
+    "sim_galapagos_confidence_weight": {
+      "call": "sim(galapagos, \"L\", weight = weights)",
+      "files": ["sim_galapagos_conf.L_weight", "sim_galapagos_confidence_weight", "sim_galapagos_conf.U_weight"]
+    },
+    "sim_galapagos_Fisher_weight": {
+      "call": "sim(galapagos, \"W\", weight = weights)",
+      "files": "sim_galapagos_Fisher_weight"
+    },
     "edge_default_galapagos": {
       "call": "edgeList(coin(galapagos))",
       "files": "edge_default_galapagos"
