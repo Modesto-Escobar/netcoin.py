@@ -255,6 +255,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
 | Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
 | Networks from a survey, CoWeb     | `sur_coin(...)`, `cob_coin(...)`           |
+| Clusters and 2-d reductions       | `looking4clusters(...)` (PAM, hclust, k-means, PCA, MDS, t-SNE, NMF, UMAP) |
 | Log-linear associations           | `log_coin(...)`                            |
 | Networks of correlations          | `net_corr(...)`, `d_net_corr(...)`, `layout_fact(...)` |
 | Layouts from coincidences         | `layout_mca(...)`, `layout_pca(...)`       |

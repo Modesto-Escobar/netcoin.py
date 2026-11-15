@@ -1064,6 +1064,54 @@
     "net_lc_options": {
       "call": "logCoin(ess, vars3, color = \"cat\", lwidth = \"z value\", main = \"Log-linear\", degreeFilter = 0)",
       "files": ["net_lc_options_nodes", "net_lc_options_links"]
+    },
+    "l4c_euclid_complete": {
+      "call": "pam/hclust(distance = euclidean, agglomeration = complete, selectedk = NULL)",
+      "files": "l4c_euclid_complete"
+    },
+    "l4c_manhattan_ward": {
+      "call": "pam/hclust(distance = manhattan, agglomeration = ward.D, selectedk = NULL)",
+      "files": "l4c_manhattan_ward"
+    },
+    "l4c_euclid_ward2": {
+      "call": "pam/hclust(distance = euclidean, agglomeration = ward.D2, selectedk = NULL)",
+      "files": "l4c_euclid_ward2"
+    },
+    "l4c_maximum_single": {
+      "call": "pam/hclust(distance = maximum, agglomeration = single, selectedk = NULL)",
+      "files": "l4c_maximum_single"
+    },
+    "l4c_euclid_mcquitty": {
+      "call": "pam/hclust(distance = euclidean, agglomeration = mcquitty, selectedk = NULL)",
+      "files": "l4c_euclid_mcquitty"
+    },
+    "l4c_euclid_average_k4": {
+      "call": "pam/hclust(distance = euclidean, agglomeration = average, selectedk = 4)",
+      "files": "l4c_euclid_average_k4"
+    },
+    "l4c_euclid_centroid": {
+      "call": "pam/hclust(distance = euclidean, agglomeration = centroid, selectedk = NULL)",
+      "files": "l4c_euclid_centroid"
+    },
+    "l4c_euclid_median": {
+      "call": "pam/hclust(distance = euclidean, agglomeration = median, selectedk = NULL)",
+      "files": "l4c_euclid_median"
+    },
+    "l4c_canberra_average": {
+      "call": "pam/hclust(distance = canberra, agglomeration = average, selectedk = NULL)",
+      "files": "l4c_canberra_average"
+    },
+    "l4c_binary_complete": {
+      "call": "pam/hclust(distance = binary, agglomeration = complete, selectedk = NULL)",
+      "files": "l4c_binary_complete"
+    },
+    "l4c_counts_ward2": {
+      "call": "pam/hclust(distance = euclidean, agglomeration = ward.D2, selectedk = 3)",
+      "files": "l4c_counts_ward2"
+    },
+    "l4c_canberra_average_base": {
+      "call": "pam/hclust(distance = canberra, agglomeration = average, selectedk = NULL)",
+      "files": "l4c_canberra_average_base"
     }
   }
 }

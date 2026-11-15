@@ -763,5 +763,60 @@ lc_case("exo_two", 'logCoin(lg, c("A","B","C","E"), exogenous = c("A","E"), orde
 lc_case("options", 'logCoin(ess, vars3, color = "cat", lwidth = "z value", main = "Log-linear", degreeFilter = 0)',
         logCoin(ess_w, vars3l, color = "cat", lwidth = "z value", main = "Log-linear", degreeFilter = 0))
 
+# ----------------------------------------------------- looking4clusters ----
+set.seed(3)
+l4c_blobs <- round(rbind(matrix(rnorm(60, 0, 1), 20, 3), matrix(rnorm(60, 4, 1), 20, 3),
+                         matrix(rnorm(60, c(0, 5, -3), 1.2), 20, 3, byrow = TRUE)), 3)
+colnames(l4c_blobs) <- c("x1", "x2", "x3")
+set.seed(4)
+l4c_counts <- cbind(matrix(rpois(45 * 6, 3), 45, 6), matrix(rpois(45 * 6, c(1, 6)), 45, 6, byrow = TRUE))
+l4c_counts[1:15, 1:4] <- l4c_counts[1:15, 1:4] + 5L
+l4c_counts[l4c_counts == 0] <- sample(0:1, sum(l4c_counts == 0), TRUE)
+colnames(l4c_counts) <- paste0("v", 1:12)
+write_csv(as.data.frame(l4c_blobs), "l4c_blobs", dir_in); write_csv(as.data.frame(l4c_counts), "l4c_counts", dir_in)
+l4c_case <- function(id, M, distance, agglomeration, selectedk = NULL) {
+  o <- suppressMessages(netCoin:::run_pam_hclust(netCoin:::create_l4c(M), distance, agglomeration, selectedk))
+  for (m in c("pam", "hclust")) {
+    x <- as.data.frame(lapply(o$clusters[[m]], as.character)); rownames(x) <- NULL
+    write_csv(x, paste0("l4c_", id, "_", m), dir_out)
+  }
+  write_json(list(pam = attr(o$clusters$pam, "optim_cluster"), hclust = attr(o$clusters$hclust, "optim_cluster")),
+             file.path(dir_out, paste0("l4c_", id, "_optim.json")), auto_unbox = TRUE)
+  add_case(paste0("l4c_", id), sprintf("pam/hclust(distance = %s, agglomeration = %s, selectedk = %s)", distance, agglomeration, deparse(selectedk)),
+           paste0("l4c_", id))
+}
+l4c_case("euclid_complete", l4c_blobs, "euclidean", "complete")
+l4c_case("manhattan_ward", l4c_blobs, "manhattan", "ward.D")
+l4c_case("euclid_ward2", l4c_blobs, "euclidean", "ward.D2")
+l4c_case("maximum_single", l4c_blobs, "maximum", "single")
+l4c_case("euclid_mcquitty", l4c_blobs, "euclidean", "mcquitty")
+l4c_case("euclid_average_k4", l4c_blobs, "euclidean", "average", 4)
+l4c_case("euclid_centroid", l4c_blobs, "euclidean", "centroid")
+l4c_case("euclid_median", l4c_blobs, "euclidean", "median")
+l4c_case("canberra_average", l4c_counts, "canberra", "average")
+l4c_case("binary_complete", l4c_counts, "binary", "complete")
+l4c_case("counts_ward2", l4c_counts, "euclidean", "ward.D2", 3)
+for (nm in c("blobs", "counts")) {
+  M <- if (nm == "blobs") l4c_blobs else l4c_counts
+  o <- suppressMessages(netCoin:::run_mds(netCoin:::run_pca(netCoin:::create_l4c(M))))
+  plainm <- function(m) as.data.frame(matrix(as.numeric(m), nrow(m), dimnames = list(NULL, colnames(m))))
+  write_csv(plainm(o$reductions$pca), paste0("l4c_", nm, "_pca"), dir_out); write_csv(plainm(o$reductions$cmds), paste0("l4c_", nm, "_cmds"), dir_out)
+  write_json(list(pca = attr(o$reductions$pca, "pctvar"), cmds = attr(o$reductions$cmds, "pctvar")),
+             file.path(dir_out, paste0("l4c_", nm, "_pctvar.json")), auto_unbox = FALSE, digits = NA)
+}
+# the same with base R's dist(): parallelDist (used when installed) scales canberra differently
+suppressMessages(utils::assignInNamespace("get_dissimilarity", function(distance, data, threads) {
+  if (!(distance %in% c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"))) distance <- "euclidean"
+  dist(data, method = distance)
+}, ns = "netCoin"))
+l4c_case("canberra_average_base", l4c_counts, "canberra", "average")
+for (me in c("canberra", "binary", "euclidean", "maximum", "manhattan", "minkowski"))
+  write_csv(data.frame(d = as.numeric(dist(l4c_counts, method = me))), paste0("l4c_dist_", me), dir_out)
+cm <- cmdscale(dist(l4c_counts, method = "canberra"), k = 2, eig = TRUE)
+write_csv(as.data.frame(matrix(as.numeric(cm$points), nrow(cm$points))), "l4c_counts_cmds_base", dir_out)
+write_json(list(cmds = cm$eig[1:2] / sum(pmax(cm$eig, 0)) * 100), file.path(dir_out, "l4c_counts_cmds_base_pctvar.json"), digits = NA)
+oc <- netCoin:::create_l4c(l4c_counts, components = TRUE)
+write_csv(as.data.frame(oc$data), "l4c_components", dir_out)
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")
