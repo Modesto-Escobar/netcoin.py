@@ -32,7 +32,7 @@ df = pd.DataFrame({
     "texto2": ["hola", "hola qué tal", "hola me llamo jose", "quieres"]
 })
 
-incidencia=nc.dichotomize(df, variables="texto2")
+incidencia=nc.dichotomize(df, variables="texto2", sep=" ")
 
 aa = nc.coin(incidencia)
 

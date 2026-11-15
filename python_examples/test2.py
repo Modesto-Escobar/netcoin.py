@@ -18,9 +18,9 @@ df = pd.DataFrame({
     "texto2": ["hola", "hola qué tal", "hola me llamo jose", "quieres"]
 })
 
-incidencia=di(df, variables="texto2")
+incidencia=di(df, variables="texto2", sep=" ")
 aa = netcoin.coin(incidencia)
-di(df, "texto2")
+di(df, "texto2", sep=" ")
 bb = simEdge.sim(aa)
 simEdge.edge_list(aa)
 cc =simEdge.distant(bb, True)

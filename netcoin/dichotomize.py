@@ -1,173 +1,301 @@
-import pandas as pd
-import numpy as np
+"""Dichotomise categorical and textual variables (port of ``netCoin::dichotomize``)."""
+from __future__ import annotations
+
 import re
+import unicodedata
+import warnings
+from collections import Counter
+from typing import Iterable, Sequence
+
+import numpy as np
+import pandas as pd
+
+_TRIM = " \t\r\n"  # what R's trimws() removes
 
 
-def _normalize_sep(sep, variables):
+def _collation_key(term: str):
+    """Approximate the locale collation R uses to sort terms.
+
+    R orders the levels of ``table()`` with the collation of the session
+    locale: case and accents are secondary (``"azul" < "Green" < "rojo"``) and a
+    lowercase letter precedes its uppercase twin. Plain code-point order does
+    not do that. This key reproduces that behaviour for the usual cases; it is
+    not a full implementation of the platform collation.
+    """
+    decomposed = unicodedata.normalize("NFD", term)
+    base = "".join(c for c in decomposed if not unicodedata.combining(c))
+    return (base.casefold(), decomposed.casefold(), term.swapcase())
+
+
+def _as_character(series: pd.Series) -> list[str]:
+    """``as.character`` of a column; missing values become ``""`` as in R."""
+
+    def convert(x):
+        if x is None or (not isinstance(x, str) and pd.isna(x)):
+            return ""
+        if isinstance(x, (bool, np.bool_)):
+            return "TRUE" if x else "FALSE"
+        if isinstance(x, (float, np.floating)) and float(x).is_integer():
+            return str(int(x))
+        return str(x)
+
+    return [convert(x) for x in series.tolist()]
+
+
+def _recycle_sep(sep, variables: list[str]) -> dict[str, str]:
     if isinstance(sep, str):
-        return {var: sep for var in variables}
-    elif isinstance(sep, (list, tuple)):
-        if len(sep) == 1:
-            return {var: sep[0] for var in variables}
-        if len(sep) != len(variables):
-            raise ValueError("sep debe tener longitud 1 o la misma longitud que variables")
-        return dict(zip(variables, sep))
-    elif isinstance(sep, dict):
-        return {var: sep.get(var, "") for var in variables}
-    else:
-        raise TypeError("sep debe ser str, list, tuple o dict")
+        return {v: sep for v in variables}
+    if isinstance(sep, dict):
+        return {v: sep.get(v, "") for v in variables}
+    if isinstance(sep, Sequence):
+        sep = list(sep)
+        if not sep:
+            raise ValueError("sep must not be empty")
+        if len(sep) == len(variables):
+            return dict(zip(variables, sep))
+        return {v: sep[0] for v in variables}  # R recycles sep[1]
+    raise TypeError("sep must be a string, a sequence of strings or a dict")
 
 
-def _tokenize_series(s: pd.Series, sep: str, regex: bool = False):
-    s = s.astype("string")
+def _clean_text(parts: list[str], text: str, stopwords: set[str]) -> list[str]:
+    """R: lower/upper case, drop everything but letters, spaces and ``_``."""
+    out = []
+    for x in parts:
+        x = x.lower() if text == "lower" else x.upper()
+        x = "".join(ch for ch in x if ch.isalpha() or ch.isspace() or ch == "_")
+        x = x.strip(_TRIM)
+        if x != "" and x not in stopwords:
+            out.append(x)
+    return out
 
-    if sep == "":
-        return s.apply(
-            lambda x: [] if pd.isna(x) or str(x).strip() == ""
-            else str(x).split()
-        )
-    else:
-        if regex:
-            return s.apply(
-                lambda x: [] if pd.isna(x) or str(x).strip() == ""
-                else [t.strip() for t in re.split(sep, str(x)) if t.strip() != ""]
-            )
+
+def _split_column(series: pd.Series, sep: str, regex: bool, text: str,
+                  stopwords: set[str]) -> list[list[str]]:
+    """The list of terms of every row of one variable."""
+    rows = []
+    for raw in _as_character(series):
+        if raw.strip(_TRIM) == "":
+            rows.append([])
+            continue
+        if sep not in ("", "C"):
+            parts = re.split(sep, raw) if regex else raw.split(sep)
+            if parts and parts[-1] == "":  # strsplit() drops one trailing empty piece
+                parts.pop()
         else:
-            return s.apply(
-                lambda x: [] if pd.isna(x) or str(x).strip() == ""
-                else [t.strip() for t in str(x).split(sep) if t.strip() != ""]
-            )
+            parts = [raw]
+        if text != "none":
+            parts = _clean_text(parts, text, stopwords)
+        else:
+            # R keeps empty tokens ("a;;b"), which end up as an unnamed column;
+            # they carry no information, so they are dropped here.
+            parts = [p for p in parts if p != ""]
+        rows.append(parts)
+    return rows
+
+
+def _unique(items: Iterable[str]) -> list[str]:
+    return list(dict.fromkeys(items))
+
+
+def _concatenate_columns(df: pd.DataFrame, variables: list[str], nas: str) -> pd.Series:
+    """``sep="C"``: join the non-missing values of each row with ``|``."""
+    values = [
+        [None if (not isinstance(x, str) and pd.isna(x)) else x for x in df[v].tolist()]
+        for v in variables
+    ]
+    as_text = [_as_character(df[v]) for v in variables]
+    joined = []
+    for i in range(len(df)):
+        present = [as_text[j][i] for j in range(len(variables)) if values[j][i] is not None]
+        joined.append("|".join(present) if present else str(nas))
+    return pd.Series(joined, index=df.index, name="String")
 
 
 def dichotomize(
     data: pd.DataFrame,
-    variables,
-    sep="",
-    min_freq=1,
-    length=0,
-    values=None,
-    sparse=False,
-    add=False,
-    sort=True,
-    nas="None",
-    stopwords=None,
-    regex=False
-):
+    variables: str | Sequence[str],
+    sep: str | Sequence[str] | dict = "",
+    regex: bool = False,
+    text: str = "none",
+    min_freq: float = 1,
+    length: int = 0,
+    sort: bool = True,
+    values: Sequence | None = None,
+    stopwords: Iterable[str] | None = None,
+    nas: str | None = "None",
+    sparse: bool = False,
+    add: bool = False,
+) -> pd.DataFrame:
+    """Convert categorical or textual columns into 0/1 indicator columns.
+
+    Port of ``dichotomize`` from the R package netCoin. The columns are named
+    after the categories (or the words) found in the selected variables.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Table with the variables to convert. A cell can hold a single value or
+        several events delimited by ``sep``.
+    variables : str or list of str
+        Columns to convert.
+    sep : str, sequence of str or dict
+        Separator that divides the events of a cell. ``""`` (default) takes the
+        whole cell as one category. ``"C"`` concatenates the variables of each
+        row before dichotomising (requires ``nas``). A sequence gives one
+        separator per variable (a shorter one recycles its first element).
+    regex : bool
+        Treat ``sep`` as a regular expression. With several variables, their
+        terms are pooled per row into a single group named after the first
+        variable.
+    text : {"none", "lower", "upper"}
+        Case conversion. ``"lower"``/``"upper"`` also remove punctuation and
+        numbers.
+    min_freq : float
+        Keep only terms with at least this frequency. A value in (0, 1) is a
+        proportion of the rows. (``min`` in R.)
+    length : int
+        Maximum number of columns (most frequent terms first); 0 is no limit.
+    sort : bool
+        Order the columns by decreasing frequency. Otherwise they follow the
+        alphabetical order of the terms. Ties are broken alphabetically.
+    values : sequence, optional
+        Restrict the conversion to these terms.
+    stopwords : iterable of str, optional
+        Words to remove; only applied when ``text`` is ``"lower"`` or ``"upper"``.
+    nas : str or None
+        Name of the column that flags the rows without any term; it is called
+        ``"<variable>:<nas>"``. ``None`` omits it (always omitted if ``sparse``).
+    sparse : bool
+        Return pandas sparse columns instead of dense ones.
+    add : bool
+        Append the new columns to ``data`` (ignored if ``sparse``).
+
+    Returns
+    -------
+    DataFrame
+        0/1 integer columns, with the index of ``data``. With several
+        independent variables the columns are prefixed with ``"<variable>:"``.
+
+    Notes
+    -----
+    The order of terms with the same frequency follows an approximation of the
+    locale collation used by R (case and accents are secondary).
+    Empty tokens (``"a;;b"``) are discarded, whereas R keeps an unnamed column.
+    """
     if not isinstance(data, pd.DataFrame):
         raise TypeError("You must pass a data frame!")
+    if text not in ("none", "lower", "upper"):
+        raise ValueError("text must be 'none', 'lower' or 'upper'")
 
-    if isinstance(variables, str):
-        variables = [variables]
-    else:
-        variables = list(variables)
+    variables = [variables] if isinstance(variables, str) else list(variables)
+    missing = [v for v in variables if v not in data.columns]
+    if missing:
+        raise KeyError(f"variables not in data: {missing}")
 
-    df = data.copy()
-    old_df = df.copy()
-
+    original = data
+    index = data.index
+    n = len(data)
     if 0 < min_freq < 1:
-        min_freq = min_freq * len(df)
-    min_freq = int(np.ceil(min_freq))
+        min_freq = min_freq * n
 
-    if nas is not None and sep == "C":
-        tmp = df[variables].copy()
+    sep_by_var = _recycle_sep(sep, variables)
 
-        def join_row(row):
-            vals = []
-            for x in row:
-                if pd.isna(x):
-                    vals.append(np.nan)
-                else:
-                    vals.append(str(x))
-            return "|".join(map(str, vals))
-
-        string_series = tmp.apply(join_row, axis=1)
-        string_series = string_series.str.replace(r"\|NA", "", regex=True)
-        string_series = string_series.str.replace("NA", str(nas), regex=False)
-
-        df = pd.DataFrame({"String": string_series}, index=df.index)
+    # sep = "C": concatenate the variables of each row (R: only if nas is given)
+    first_sep = sep_by_var[variables[0]] if variables else ""
+    if nas is not None and first_sep == "C":
+        data = pd.DataFrame({"String": _concatenate_columns(data, variables, nas)})
         variables = ["String"]
-        sep = "|"
+        sep_by_var = {"String": "|"}
 
-    sep_map = _normalize_sep(sep, variables)
-    result_parts = []
-    
-    if stopwords is None:
-        stopwords = set()
+    stop = set()
+    if stopwords is not None and text != "none":
+        stop = {str(w).lower() if text == "lower" else str(w).upper() for w in stopwords}
+
+    terms_by_var = {
+        v: _split_column(data[v], sep_by_var[v], regex, text, stop) for v in variables
+    }
+
+    # terms of each row, per group of variables
+    if regex and len(variables) > 1:
+        pooled = [_unique(sum(rows, [])) for rows in zip(*(terms_by_var[v] for v in variables))]
+        groups = {variables[0]: pooled}
     else:
-        stopwords = {str(w).strip() for w in stopwords}
+        groups = {v: [_unique(r) for r in terms_by_var[v]] for v in variables}
+    prefix = len(groups) > 1
 
-    for c in variables:
-        current_sep = sep_map[c]
-        tokens = _tokenize_series(df[c], current_sep, regex=regex)
-        
-        if stopwords:
-            tokens = tokens.apply(
-                lambda xs: [x for x in xs if str(x).strip() not in stopwords]
-        )   
+    blocks: list[pd.DataFrame] = []
+    for group, rows in groups.items():
+        all_terms = [t for r in rows for t in r]
+        if not all_terms:
+            continue
 
-        exploded = tokens.explode()
-        exploded = exploded.dropna()
-        exploded = exploded[exploded.astype(str).str.strip() != ""]
-        exploded = exploded.astype(str).str.strip()
-
-        if exploded.empty:
-            W = pd.DataFrame(index=df.index)
-        else:
-            W = pd.crosstab(exploded.index, exploded).clip(upper=1)
-            W = W.reindex(df.index, fill_value=0).astype("Int64")
-
-        if values is not None:
-            wanted = [str(v).strip() for v in values]
-            W = W.reindex(columns=wanted, fill_value=0).astype("Int64")
-
-        if values is None and min_freq > 0 and W.shape[1] > 0:
-            vf = W.sum(axis=0)
-            keep = vf[vf >= min_freq].index
-            W = W.loc[:, keep]
-
-        if W.shape[1] > 0:
-            vf = W.sum(axis=0)
-
+        counts = Counter(all_terms)
+        if values is None:
+            valid = sorted(counts, key=_collation_key)  # order of R's table()
             if sort:
-                W = W.loc[:, vf.sort_values(ascending=False).index]
-            else:
-                W = W.reindex(sorted(W.columns), axis=1)
+                valid.sort(key=lambda t: -counts[t])  # stable: ties stay alphabetical
+            if min_freq > 0:
+                valid = [t for t in valid if counts[t] >= min_freq]
+            if length > 0 and len(valid) > length:
+                valid = valid[:length]
+        else:
+            valid = [str(v) for v in values]
+            if min_freq > 0 or length > 0:
+                position = {t: i for i, t in enumerate(valid)}  # first match, as match()
+                freq: Counter = Counter()
+                for t in all_terms:
+                    if t in position:
+                        freq[position[t]] += 1
+                idx = sorted(freq)
+                if min_freq > 0:
+                    idx = [i for i in idx if freq[i] >= min_freq]
+                if sort:
+                    idx.sort(key=lambda i: -freq[i])
+                if length > 0 and len(idx) > length:
+                    idx = idx[:length]
+                valid = [valid[i] for i in idx]
 
-            if length and length > 0:
-                W = W.iloc[:, :min(length, W.shape[1])]
+        if not valid:
+            continue
 
-        new_cols = []
-        for z in W.columns:
-            label = ".ND." if z == "" else str(z)
-            if len(variables) > 1:
-                label = f"{c}:{label}"
-            new_cols.append(label)
-        W.columns = new_cols
+        column_of = {t: j for j, t in enumerate(valid)}
+        row_idx, col_idx = [], []
+        for i, r in enumerate(rows):
+            for t in r:
+                j = column_of.get(t)
+                if j is not None:
+                    row_idx.append(i)
+                    col_idx.append(j)
 
+        names = [f"{group}:{t}" for t in valid] if prefix else list(valid)
+
+        if sparse:
+            from scipy import sparse as sp
+
+            matrix = sp.csr_matrix(
+                (np.ones(len(row_idx), dtype=np.int8), (row_idx, col_idx)),
+                shape=(n, len(valid)),
+            )
+            matrix.data[:] = 1
+            blocks.append(pd.DataFrame.sparse.from_spmatrix(matrix, index=index, columns=names))
+            continue
+
+        dense = np.zeros((n, len(valid)), dtype=np.int64)
+        dense[row_idx, col_idx] = 1
+        block = pd.DataFrame(dense, index=index, columns=names)
         if nas is not None:
-            na_col = f"{c}:<NA>" if len(variables) > 1 else "<NA>"
-            W[na_col] = np.where(W.sum(axis=1) == 0, 1, 0)
+            block[f"{group}:{nas}"] = (dense.sum(axis=1) == 0).astype(np.int64)
+        blocks.append(block)
 
-        W = W.astype("Int64")
-        result_parts.append(W)
+    if not blocks:
+        return original.copy()
 
-    if result_parts:
-        R_Data = pd.concat(result_parts, axis=1).astype("Int64")
-    else:
-        R_Data = pd.DataFrame(index=df.index)
-
-    if nas is not None and not sparse:
-        R_Data.columns = [
-            col.replace(":<NA>", f":{nas}").replace("<NA>", str(nas)).replace(".ND.", str(nas))
-            for col in R_Data.columns
-        ]
+    result = pd.concat(blocks, axis=1)
 
     if sparse:
-        for col in R_Data.columns:
-            R_Data[col] = pd.arrays.SparseArray(R_Data[col], fill_value=0)
-        return R_Data
-
+        if add:
+            warnings.warn("'add' is ignored when sparse=True", stacklevel=2)
+        return result
     if add:
-        return pd.concat([old_df, R_Data], axis=1)
-
-    return R_Data
+        return pd.concat([original, result], axis=1)
+    return result

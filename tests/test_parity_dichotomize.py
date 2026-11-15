@@ -21,30 +21,17 @@ CASES = {
     "words_lower": ("txt", dict(variables="sentence", sep=" ", text="lower",
                                 stopwords=["the", "a", "and"])),
     "two_seps": ("txt", dict(variables=["kw2", "colour"], sep=[";", ""])),
+    "sep_c": ("txt", dict(variables=["grp", "colour"], sep="C")),
+    "sep_c_nas": ("txt", dict(variables=["grp", "colour"], sep="C", nas="empty")),
+    "min_fraction": ("txt", dict(variables="kw2", sep=";", min_freq=0.3)),
+    "values_nomin": ("txt", dict(variables="kw2", sep=";", values=["verde", "red", "zzz"],
+                                 min_freq=0, sort=False)),
+    "regex_ws": ("txt", dict(variables="sentence", sep=r"\s+", regex=True, text="upper", length=3)),
     "regex_pool": ("txt", dict(variables=["kw2", "sentence"], sep="[;, ]+",
                                regex=True, text="lower")),
 }
 
-_WORDS = 'python splits sep="" on whitespace; R keeps the whole value (e.g. "70 and +")'
-_ORDER = ("column order: R breaks frequency ties with the locale collation, python with "
-          "code points; and R prefixes the missing-value column with the variable name "
-          "(\"kw2:None\"), python does not")
-GAPS = {
-    "ess_age": _WORDS,
-    "ess_two": _WORDS,
-    "kw": _ORDER,
-    "kw_min2": _ORDER,
-    "kw_length2": _ORDER,
-    "kw_nosort": _ORDER,
-    "kw_nas_null": _ORDER,
-    "kw_nas_label": _ORDER,
-    "kw_values": _ORDER,
-    "kw_add": _ORDER,
-    "kw_spaces": "R does not strip whitespace around the separator (\" green\"); python does",
-    "words_lower": "python dichotomize() has no 'text' argument (lower/upper)",
-    "two_seps": _ORDER,
-    "regex_pool": "python dichotomize() has no 'text' argument nor pooling of several variables with regex",
-}
+GAPS = {}
 
 
 @pytest.mark.parametrize("case", CASES)

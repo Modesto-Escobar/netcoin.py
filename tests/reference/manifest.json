@@ -372,6 +372,26 @@
     "dicho_regex_pool": {
       "call": "dichotomize(txt, c(\"kw2\",\"sentence\"), sep = \"[;, ]+\", regex = TRUE, text = \"lower\")",
       "files": "dicho_regex_pool"
+    },
+    "dicho_sep_c": {
+      "call": "dichotomize(txt, c(\"grp\",\"colour\"), sep = \"C\")",
+      "files": "dicho_sep_c"
+    },
+    "dicho_sep_c_nas": {
+      "call": "dichotomize(txt, c(\"grp\",\"colour\"), sep = \"C\", nas = \"empty\")",
+      "files": "dicho_sep_c_nas"
+    },
+    "dicho_min_fraction": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", min = .3)",
+      "files": "dicho_min_fraction"
+    },
+    "dicho_values_nomin": {
+      "call": "dichotomize(txt, \"kw2\", sep = \";\", values = c(\"verde\",\"red\",\"zzz\"), min = 0, sort = FALSE)",
+      "files": "dicho_values_nomin"
+    },
+    "dicho_regex_ws": {
+      "call": "dichotomize(txt, \"sentence\", sep = \"\\s+\", regex = TRUE, text = \"upper\", length = 3)",
+      "files": "dicho_regex_ws"
     }
   }
 }

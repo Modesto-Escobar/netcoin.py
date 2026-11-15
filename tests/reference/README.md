@@ -28,6 +28,6 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 |---|---|
 | `sim(..., "H")` (Haberman) | `sqrt(N)[is.na(x)]` fills only the first `NA` with `sqrt(N)`; the others stay `NaN`. Python fills all of them. |
 | `expectedList(confidence = TRUE)` | Fails (`cbind` with 78 and 64 rows): it calls `edgeList(<matrix>, "shape", min = -Inf)` and `edgeList` rewrites `min = -Inf` to `1`. |
-| `dichotomize(..., sep = "C")` | Returns meaningless columns (e.g. `V3`, `azul;rojo;verde`). |
+| `dichotomize` empty tokens | `"a;;b"`, or `sep = "C"` with a `""` value, keeps an empty term that ends up as an unnamed column (`V3`). Python drops empty tokens. |
 | `edgeList(..., criteria = "Fisher")` | The p-value cap (`max = .5`) is applied for `"Z"` and `"Hyp"` but not for `"Fisher"`. |
 | `sim(coin, "L")` alone | Returns a single matrix instead of `conf.L`, `confidence`, `conf.U`. |

@@ -1,9 +1,9 @@
-"id","keywords","kw2","colour","sentence"
-1,"red;blue","red;blue","rojo","The cat and the dog"
-2,"blue; green","blue;green","azul","a Dog, a cat!"
-3,"red","red",NA,"the bird"
-4,"Green;red;blue","Green;red;blue","verde","Cat dog bird"
-5,NA,NA,"rojo",""
-6,"","","azul",NA
-7,"red;red","red;red","rojo","The Dog"
-8,"azul;rojo;verde","azul;rojo;verde","rojo","dog dog cat"
+"id","keywords","kw2","colour","grp","sentence"
+1,"red;blue","red;blue","rojo","A","The cat and the dog"
+2,"blue; green","blue;green","azul","B","a Dog, a cat!"
+3,"red","red",NA,NA,"the bird"
+4,"Green;red;blue","Green;red;blue","verde","A","Cat dog bird"
+5,NA,NA,"rojo","B",""
+6,"","","azul","A",NA
+7,"red;red","red;red","rojo",NA,"The Dog"
+8,"azul;rojo;verde","azul;rojo;verde","rojo","B","dog dog cat"

@@ -63,6 +63,7 @@ txt <- data.frame(
   keywords = c("red;blue", "blue; green", "red", "Green;red;blue", NA, "", "red;red", "azul;rojo;verde"),
   kw2      = c("red;blue", "blue;green", "red", "Green;red;blue", NA, "", "red;red", "azul;rojo;verde"),
   colour   = c("rojo", "azul", NA, "verde", "rojo", "azul", "rojo", "rojo"),
+  grp      = c("A", "B", NA, "A", "B", "A", NA, "B"),
   sentence = c("The cat and the dog", "a Dog, a cat!", "the bird", "Cat dog bird", "", NA, "The Dog", "dog dog cat"),
   stringsAsFactors = FALSE
 )
@@ -207,8 +208,16 @@ di_case("words_lower",    "dichotomize(txt, \"sentence\", sep = \" \", text = \"
 di_case("two_seps",       "dichotomize(txt, c(\"kw2\",\"colour\"), sep = c(\";\",\"\"))", dichotomize(txt, c("kw2", "colour"), sep = c(";", "")))
 di_case("regex_pool",     "dichotomize(txt, c(\"kw2\",\"sentence\"), sep = \"[;, ]+\", regex = TRUE, text = \"lower\")",
         dichotomize(txt, c("kw2", "sentence"), sep = "[;, ]+", regex = TRUE, text = "lower"))
-# NOTE: dichotomize(txt, c("keywords","colour"), sep = "C") returns nonsensical
-# columns in netCoin 2.1.49 (e.g. "V3", "azul;rojo;verde"), so it is not used as reference.
+di_case("sep_c",          "dichotomize(txt, c(\"grp\",\"colour\"), sep = \"C\")", dichotomize(txt, c("grp", "colour"), sep = "C"))
+di_case("sep_c_nas",      "dichotomize(txt, c(\"grp\",\"colour\"), sep = \"C\", nas = \"empty\")", dichotomize(txt, c("grp", "colour"), sep = "C", nas = "empty"))
+di_case("min_fraction",   "dichotomize(txt, \"kw2\", sep = \";\", min = .3)", dichotomize(txt, "kw2", sep = ";", min = .3))
+di_case("values_nomin",   "dichotomize(txt, \"kw2\", sep = \";\", values = c(\"verde\",\"red\",\"zzz\"), min = 0, sort = FALSE)",
+        dichotomize(txt, "kw2", sep = ";", values = c("verde", "red", "zzz"), min = 0, sort = FALSE))
+di_case("regex_ws",       "dichotomize(txt, \"sentence\", sep = \"\\s+\", regex = TRUE, text = \"upper\", length = 3)",
+        dichotomize(txt, "sentence", sep = "\\s+", regex = TRUE, text = "upper", length = 3))
+# R keeps an unnamed column for empty tokens (e.g. "a;;b" or sep = "C" with a ""
+# value); python drops them, so no reference is generated for those inputs.
+# R's dichotomize(sep = "C") on c("keywords","colour") shows it: column "V3".
 
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")
