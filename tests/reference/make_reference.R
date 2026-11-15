@@ -818,5 +818,47 @@ write_json(list(cmds = cm$eig[1:2] / sum(pmax(cm$eig, 0)) * 100), file.path(dir_
 oc <- netCoin:::create_l4c(l4c_counts, components = TRUE)
 write_csv(as.data.frame(oc$data), "l4c_components", dir_out)
 
+# ------------------------------------------------------------------ surScat ----
+sc_case <- function(id, call_txt, expr) {
+  tryCatch({
+    N <- expr
+    net_case(paste0("sc_", id), call_txt, N)
+    info <- list(planeName = attr(N, "planeName"), clusterColumns = attr(N, "clusterColumns"),
+                 caseToPattern = attr(N, "caseToPattern"), caseWeight = attr(N, "caseWeight"),
+                 sampledFrom = attr(N, "sampledFrom"))
+    ki <- attr(N, "clusterIndex"); if (!is.null(ki)) { info$clusterIndex <- as.list(ki); info$clusterIndexName <- attr(ki, "index") }
+    cl <- N$clusters
+    if (length(cl)) info$centroids <- lapply(cl, function(m) { m <- as.matrix(m); dimnames(m) <- list(rownames(m), colnames(m)); m })
+    cm <- N$clusterMeans
+    if (length(cm)) info$clusterMeans <- lapply(cm, as.list)
+    write_json(info, file.path(dir_out, paste0("sc_", id, "_info.json")), auto_unbox = TRUE, digits = NA, na = "null", dataframe = "columns")
+  }, error = function(e) message("surScat case ", id, " FAILED: ", conditionMessage(e)))
+}
+V4 <- c("Gender", "Age", "Social participation", "Political participation")
+sc_case("mca", 'surScat(ess, V4, nclusters = 3)', suppressMessages(surScat(ess_w, V4, nclusters = 3)))
+sc_case("mca_patterns", 'surScat(ess, V4, patterns = TRUE, nclusters = c(2, 3))', suppressMessages(surScat(ess_w, V4, patterns = TRUE, nclusters = c(2, 3))))
+sc_case("mca_weight", 'surScat(ess, V4, weight = "cweight", nclusters = 3)', suppressMessages(surScat(ess_w, V4, weight = "cweight", nclusters = 3)))
+sc_case("mca_weight_patterns", 'surScat(ess, V4, weight = "cweight", patterns = TRUE, nclusters = 2)',
+        suppressMessages(surScat(ess_w, V4, weight = "cweight", patterns = TRUE, nclusters = 2)))
+sc_case("vpatterns", 'surScat(ess, V4, vPatterns = c("Gender","Age"), nclusters = 2)', suppressMessages(surScat(ess_w, V4, vPatterns = c("Gender", "Age"), nclusters = 2)))
+sc_case("pca", 'surScat(ess_metric, c("income","edu","Age","Gender"), active = c("income","edu"), type = "pca", nclusters = 3)',
+        suppressMessages(surScat(ess_m, c("income", "edu", "Age", "Gender"), active = c("income", "edu"), type = "pca", nclusters = 3)))
+sc_case("pca_weight", 'surScat(ess_metric, c("income","edu","Age"), active = c("income","edu"), weight = "cweight", nclusters = 2)',
+        suppressMessages(surScat(ess_m, c("income", "edu", "Age"), active = c("income", "edu"), weight = "cweight", nclusters = 2)))
+sc_case("axes_vars", 'surScat(ess_metric, c("income","edu","Gender"), active = c("income","edu"), xaxis = "income", yaxis = "edu")',
+        suppressMessages(surScat(ess_m, c("income", "edu", "Gender"), active = c("income", "edu"), xaxis = "income", yaxis = "edu")))
+sc_case("axes_mixed", 'surScat(ess_metric, c("income","edu","Gender"), active = c("income","edu"), xaxis = c("income", TRUE), yaxis = 1, nclusters = 2)',
+        suppressMessages(surScat(ess_m, c("income", "edu", "Gender"), active = c("income", "edu"), xaxis = c("income", TRUE), yaxis = 1, nclusters = 2)))
+sc_case("auto", 'surScat(ess, V4, nclusters = "auto")', suppressMessages(surScat(ess_w, V4, nclusters = "auto")))
+sc_case("auto_range", 'surScat(ess, V4, nclusters = c("auto", 2, 3, 4), clusterIndex = "silhouette")', suppressMessages(surScat(ess_w, V4, nclusters = c("auto", 2, 3, 4), clusterIndex = "silhouette")))
+sc_case("on_variables", 'surScat(ess, V4, clusterOn = "variables", nclusters = 3)', suppressMessages(surScat(ess_w, V4, clusterOn = "variables", nclusters = 3)))
+sc_case("factors3", 'surScat(ess, V4, nfactors = 3, xaxis = 1, yaxis = 3, nclusters = 2)', suppressMessages(surScat(ess_w, V4, nfactors = 3, xaxis = 1, yaxis = 3, nclusters = 2)))
+sc_case("crit", 'surScat(ess, V4, nfactors = 3, critFactors = 1, nclusters = 3)', suppressMessages(surScat(ess_w, V4, nfactors = 3, critFactors = 1, nclusters = 3)))
+sc_case("spanish", 'surScat(ess, V4, nclusters = 2, language = "es", patterns = TRUE)', suppressMessages(surScat(ess_w, V4, nclusters = 2, language = "es", patterns = TRUE)))
+sc_case("columns", 'surScat(ess, c(V4, "cweight"), active = V4, columns = c("_nclusters"), nclusters = 2, main = "Scat")',
+        suppressMessages(surScat(ess_w, c(V4, "cweight"), active = V4, columns = c("_nclusters"), nclusters = 2, main = "Scat")))
+sc_case("none", 'surScat(ess, V4, nclusters = 0)', suppressMessages(surScat(ess_w, V4, nclusters = 0)))
+sc_case("many", 'surScat(ess, V4, nclusters = c(2, 5, 3))', suppressMessages(surScat(ess_w, V4, nclusters = c(2, 5, 3))))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

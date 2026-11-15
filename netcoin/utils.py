@@ -109,3 +109,9 @@ def getByLanguage(varlist, language):
   if language not in varlist:
     language = "en"
   return varlist[language]
+
+
+groupList = dict(zip(languages, ['Group', 'Grupo', 'Grup']))
+groupsList = dict(zip(languages, ['Groups', 'Grupos', 'Grups']))
+casesList = dict(zip(languages, ['Cases', 'Casos', 'Casos']))
+restList = dict(zip(languages, ['rest', 'resto', 'resta']))

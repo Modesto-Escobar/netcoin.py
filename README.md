@@ -156,6 +156,21 @@ evolving = d_net_corr(cars, factorial="pc", sequence=[0.3, 0.5, 0.7, 0.9],
                       directory="corr_evolving")
 ```
 
+### A scattergram of the cases
+
+`sur_scat` draws the cases (or the patterns of answers) of a survey on the plane of a
+correspondence analysis, of a principal components analysis or of two observed variables, and
+colours them by k-means groups. Its nodes hold the variables, so the page can describe and filter
+the groups.
+
+```python
+from netcoin import sur_scat
+
+scat = sur_scat(survey, ["gender", "age", "works"], patterns=True, nclusters="auto",
+                weight="cweight", main="Survey")
+scat.clusters          # centroids of every group on every plane
+```
+
 ### Log-linear associations
 
 `log_coin` fits a log-linear model to the table of several categorical variables and draws the
@@ -255,6 +270,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
 | Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
 | Networks from a survey, CoWeb     | `sur_coin(...)`, `cob_coin(...)`           |
+| Scattergram of the cases          | `sur_scat(...)` (MCA/PCA planes, k-means groups, patterns) |
 | Clusters and 2-d reductions       | `looking4clusters(...)` (PAM, hclust, k-means, PCA, MDS, t-SNE, NMF, UMAP) |
 | Log-linear associations           | `log_coin(...)`                            |
 | Networks of correlations          | `net_corr(...)`, `d_net_corr(...)`, `layout_fact(...)` |

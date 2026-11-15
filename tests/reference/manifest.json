@@ -1112,6 +1112,78 @@
     "l4c_canberra_average_base": {
       "call": "pam/hclust(distance = canberra, agglomeration = average, selectedk = NULL)",
       "files": "l4c_canberra_average_base"
+    },
+    "net_sc_mca": {
+      "call": "surScat(ess, V4, nclusters = 3)",
+      "files": ["net_sc_mca_nodes", "net_sc_mca_links"]
+    },
+    "net_sc_mca_patterns": {
+      "call": "surScat(ess, V4, patterns = TRUE, nclusters = c(2, 3))",
+      "files": ["net_sc_mca_patterns_nodes", "net_sc_mca_patterns_links"]
+    },
+    "net_sc_mca_weight": {
+      "call": "surScat(ess, V4, weight = \"cweight\", nclusters = 3)",
+      "files": ["net_sc_mca_weight_nodes", "net_sc_mca_weight_links"]
+    },
+    "net_sc_mca_weight_patterns": {
+      "call": "surScat(ess, V4, weight = \"cweight\", patterns = TRUE, nclusters = 2)",
+      "files": ["net_sc_mca_weight_patterns_nodes", "net_sc_mca_weight_patterns_links"]
+    },
+    "net_sc_vpatterns": {
+      "call": "surScat(ess, V4, vPatterns = c(\"Gender\",\"Age\"), nclusters = 2)",
+      "files": ["net_sc_vpatterns_nodes", "net_sc_vpatterns_links"]
+    },
+    "net_sc_pca": {
+      "call": "surScat(ess_metric, c(\"income\",\"edu\",\"Age\",\"Gender\"), active = c(\"income\",\"edu\"), type = \"pca\", nclusters = 3)",
+      "files": ["net_sc_pca_nodes", "net_sc_pca_links"]
+    },
+    "net_sc_pca_weight": {
+      "call": "surScat(ess_metric, c(\"income\",\"edu\",\"Age\"), active = c(\"income\",\"edu\"), weight = \"cweight\", nclusters = 2)",
+      "files": ["net_sc_pca_weight_nodes", "net_sc_pca_weight_links"]
+    },
+    "net_sc_axes_vars": {
+      "call": "surScat(ess_metric, c(\"income\",\"edu\",\"Gender\"), active = c(\"income\",\"edu\"), xaxis = \"income\", yaxis = \"edu\")",
+      "files": ["net_sc_axes_vars_nodes", "net_sc_axes_vars_links"]
+    },
+    "net_sc_axes_mixed": {
+      "call": "surScat(ess_metric, c(\"income\",\"edu\",\"Gender\"), active = c(\"income\",\"edu\"), xaxis = c(\"income\", TRUE), yaxis = 1, nclusters = 2)",
+      "files": ["net_sc_axes_mixed_nodes", "net_sc_axes_mixed_links"]
+    },
+    "net_sc_auto": {
+      "call": "surScat(ess, V4, nclusters = \"auto\")",
+      "files": ["net_sc_auto_nodes", "net_sc_auto_links"]
+    },
+    "net_sc_auto_range": {
+      "call": "surScat(ess, V4, nclusters = c(\"auto\", 2, 3, 4), clusterIndex = \"silhouette\")",
+      "files": ["net_sc_auto_range_nodes", "net_sc_auto_range_links"]
+    },
+    "net_sc_on_variables": {
+      "call": "surScat(ess, V4, clusterOn = \"variables\", nclusters = 3)",
+      "files": ["net_sc_on_variables_nodes", "net_sc_on_variables_links"]
+    },
+    "net_sc_factors3": {
+      "call": "surScat(ess, V4, nfactors = 3, xaxis = 1, yaxis = 3, nclusters = 2)",
+      "files": ["net_sc_factors3_nodes", "net_sc_factors3_links"]
+    },
+    "net_sc_crit": {
+      "call": "surScat(ess, V4, nfactors = 3, critFactors = 1, nclusters = 3)",
+      "files": ["net_sc_crit_nodes", "net_sc_crit_links"]
+    },
+    "net_sc_spanish": {
+      "call": "surScat(ess, V4, nclusters = 2, language = \"es\", patterns = TRUE)",
+      "files": ["net_sc_spanish_nodes", "net_sc_spanish_links"]
+    },
+    "net_sc_columns": {
+      "call": "surScat(ess, c(V4, \"cweight\"), active = V4, columns = c(\"_nclusters\"), nclusters = 2, main = \"Scat\")",
+      "files": ["net_sc_columns_nodes", "net_sc_columns_links"]
+    },
+    "net_sc_none": {
+      "call": "surScat(ess, V4, nclusters = 0)",
+      "files": ["net_sc_none_nodes", "net_sc_none_links"]
+    },
+    "net_sc_many": {
+      "call": "surScat(ess, V4, nclusters = c(2, 5, 3))",
+      "files": ["net_sc_many_nodes", "net_sc_many_links"]
     }
   }
 }

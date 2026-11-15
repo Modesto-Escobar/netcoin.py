@@ -9,6 +9,7 @@ from .surcoin import sur_coin, cob_coin
 from .netcorr import net_corr, d_net_corr
 from .logcoin import log_coin
 from .clusters import Looking4Clusters, looking4clusters
+from .surscat import sur_scat
 from .barplot import BarCoin, bar_coin
 from .timeline import TimeCoin, time_coin, inc_time, mobile_edges
 from .pie import PieCoin, pie_coin

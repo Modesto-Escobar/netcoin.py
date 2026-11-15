@@ -1,0 +1,13 @@
+"Gender","Age","n","Social participation","Political participation","Groups(2)","ntext","name","fx","fy"
+"Male","70 and +",70,"No|Yes","No|Yes","Group: 2|Group: 1","<b>Gender</b>: Male<br/><b>Age</b>: 70 and +<br/><b>Cases</b>: 70","01",0.338737744636298,-0.192429684438156
+"Male","60-69",90,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Male<br/><b>Age</b>: 60-69<br/><b>Cases</b>: 90","02",0.0148873082598804,-0.887876391105294
+"Female","70 and +",89,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Female<br/><b>Age</b>: 70 and +<br/><b>Cases</b>: 89","03",-0.646902029131246,0.894976711565681
+"Female","60-69",99,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Female<br/><b>Age</b>: 60-69<br/><b>Cases</b>: 99","04",-0.415585016014385,0.306758425327361
+"Male","15-29",89,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Male<br/><b>Age</b>: 15-29<br/><b>Cases</b>: 89","05",0.0100697085365161,-1.87374841735781
+"Female","40-49",107,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Female<br/><b>Age</b>: 40-49<br/><b>Cases</b>: 107","06",-0.281890854177748,1.62189129965318
+"Male","30-39",65,"No|Yes","No|Yes","Group: 2|Group: 1","<b>Gender</b>: Male<br/><b>Age</b>: 30-39<br/><b>Cases</b>: 65","07",0.398034292861949,-0.211614757638993
+"Female","30-39",79,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Female<br/><b>Age</b>: 30-39<br/><b>Cases</b>: 79","08",-0.0627769071336583,0.989086917687093
+"Female","15-29",85,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Female<br/><b>Age</b>: 15-29<br/><b>Cases</b>: 85","09",-0.26328753367185,-0.655366476360439
+"Female","50-59",75,"No|Yes","No|Yes","Group: 2|Group: 1","<b>Gender</b>: Female<br/><b>Age</b>: 50-59<br/><b>Cases</b>: 75","10",0.462660076461517,0.232929815929849
+"Male","40-49",70,"No|Yes","No|Yes","Group: 1|Group: 2","<b>Gender</b>: Male<br/><b>Age</b>: 40-49<br/><b>Cases</b>: 70","11",0.0538007558366852,0.396338398737655
+"Male","50-59",79,"No|Yes","No|Yes","Group: 2|Group: 1","<b>Gender</b>: Male<br/><b>Age</b>: 50-59<br/><b>Cases</b>: 79","12",0.834592949289897,-0.978632900140953

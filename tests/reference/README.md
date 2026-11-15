@@ -49,6 +49,9 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 | `logCoin(weight = <vector>)` | The weights are cut off with `[, 1:length(...)]`, so the call fails ("indice inexistente"). Python uses them (`weight = "<column>"` works in R). |
 | `logCoin(size = )` | `if (!"size" %in% arguments)` looks at the values, not the names, so the size is always `Estimate`/`freq`/`prop`. Python respects the given `size`. |
 | `logCoin(pairwise = , directed = )` | They do nothing in R either; Python accepts them for compatibility. |
+| `surScat(nclusters = c("auto", ...))` | The installed package puts the solution chosen by the index last among the group columns; the source in the repository keeps the order in which the numbers were stated. Python follows the source (the test compares those columns by name). |
+| k-means groups | R's `kmeans` (Hartigan-Wong, random starts) and python's (Lloyd starts refined by optimal transfers) can stop at different local optima where the data hold no clear groups (indicators of categories, 5 or more groups): `many` and `on_variables` are not compared there, and python's solution has the lower within-group sum of squares. |
+| `looking4clusters` with `parallelDist` | When `parallelDist` is installed R takes the distances from it, and its Canberra distance multiplies a sum with terms 0/0 by (n + 1) / n instead of scaling it to all the variables as `dist()` does. Python follows `dist()` (the "_base" runs). |
 | group numbers of communities | The numbers `G.1`, `G.2`... come from the algorithm's internals; the groups are the same but may be numbered differently (the tests compare the partition). |
 
 ### Replicated on purpose
