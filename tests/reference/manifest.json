@@ -880,6 +880,134 @@
     "net_sur_cob_args": {
       "call": "cobCoin(ess, vars4, degree = 45, significance = .1, language = \"es\", main = \"CoWeb\")",
       "files": ["net_sur_cob_args_nodes", "net_sur_cob_args_links"]
+    },
+    "net_nc_default": {
+      "call": "netCorr(mt)",
+      "files": ["net_nc_default_nodes", "net_nc_default_links"]
+    },
+    "net_nc_spearman": {
+      "call": "netCorr(mt, method = \"spearman\")",
+      "files": ["net_nc_spearman_nodes", "net_nc_spearman_links"]
+    },
+    "net_nc_kendall": {
+      "call": "netCorr(mt, method = \"kendall\")",
+      "files": ["net_nc_kendall_nodes", "net_nc_kendall_links"]
+    },
+    "net_nc_partial": {
+      "call": "netCorr(mt, method = \"partial\")",
+      "files": ["net_nc_partial_nodes", "net_nc_partial_links"]
+    },
+    "net_nc_dcor": {
+      "call": "netCorr(mt, method = \"dcor\")",
+      "files": ["net_nc_dcor_nodes", "net_nc_dcor_links"]
+    },
+    "net_nc_multi": {
+      "call": "netCorr(mt, method = c(\"pearson\",\"spearman\",\"kendall\"), criteria = \"p(kendall)\")",
+      "files": ["net_nc_multi_nodes", "net_nc_multi_links"]
+    },
+    "net_nc_small": {
+      "call": "netCorr(small, method = c(\"spearman\",\"kendall\"), criteria = \"p\")",
+      "files": ["net_nc_small_nodes", "net_nc_small_links"]
+    },
+    "net_nc_small_one": {
+      "call": "netCorr(small, method = c(\"spearman\",\"kendall\"), linkBipolar = FALSE, maxL = 1)",
+      "files": ["net_nc_small_one_nodes", "net_nc_small_one_links"]
+    },
+    "net_nc_small_ties": {
+      "call": "netCorr(small_ties, method = c(\"spearman\",\"kendall\"), maxL = 1)",
+      "files": ["net_nc_small_ties_nodes", "net_nc_small_ties_links"]
+    },
+    "net_nc_small_na": {
+      "call": "netCorr(small_na, pairwise = TRUE, method = c(\"spearman\",\"kendall\",\"pearson\"), maxL = 1)",
+      "files": ["net_nc_small_na_nodes", "net_nc_small_na_links"]
+    },
+    "net_nc_weight": {
+      "call": "netCorr(mt_w, weight = \"w\", method = c(\"pearson\",\"spearman\",\"partial\"))",
+      "files": ["net_nc_weight_nodes", "net_nc_weight_links"]
+    },
+    "net_nc_weight_vector": {
+      "call": "netCorr(mt, weight = mt_w$w, method = \"spearman\")",
+      "files": ["net_nc_weight_vector_nodes", "net_nc_weight_vector_links"]
+    },
+    "net_nc_na_listwise": {
+      "call": "netCorr(mt_na)",
+      "files": ["net_nc_na_listwise_nodes", "net_nc_na_listwise_links"]
+    },
+    "net_nc_na_pairwise": {
+      "call": "netCorr(mt_na, pairwise = TRUE, method = c(\"pearson\",\"spearman\",\"kendall\",\"dcor\"))",
+      "files": ["net_nc_na_pairwise_nodes", "net_nc_na_pairwise_links"]
+    },
+    "net_nc_na_pairwise_weight": {
+      "call": "netCorr(mt_na + w, weight = \"w\", pairwise = TRUE, method = c(\"pearson\",\"spearman\"))",
+      "files": ["net_nc_na_pairwise_weight_nodes", "net_nc_na_pairwise_weight_links"]
+    },
+    "net_nc_na_partial": {
+      "call": "netCorr(mt_na, pairwise = TRUE, method = \"partial\")",
+      "files": ["net_nc_na_partial_nodes", "net_nc_na_partial_links"]
+    },
+    "net_nc_value": {
+      "call": "netCorr(mt, criteria = \"value\", minL = .5)",
+      "files": ["net_nc_value_nodes", "net_nc_value_links"]
+    },
+    "net_nc_value_one": {
+      "call": "netCorr(mt, criteria = \"value\", minL = .5, maxL = .9, linkBipolar = FALSE)",
+      "files": ["net_nc_value_one_nodes", "net_nc_value_one_links"]
+    },
+    "net_nc_one_sided": {
+      "call": "netCorr(mt, linkBipolar = FALSE)",
+      "files": ["net_nc_one_sided_nodes", "net_nc_one_sided_links"]
+    },
+    "net_nc_bonferroni": {
+      "call": "netCorr(mt, Bonferroni = TRUE, maxL = .05)",
+      "files": ["net_nc_bonferroni_nodes", "net_nc_bonferroni_links"]
+    },
+    "net_nc_sort": {
+      "call": "netCorr(mt_na, pairwise = TRUE, sort = TRUE, decreasing = FALSE, sortL = \"value\", decreasingL = FALSE)",
+      "files": ["net_nc_sort_nodes", "net_nc_sort_links"]
+    },
+    "net_nc_sort_decreasing": {
+      "call": "netCorr(mt_na, pairwise = TRUE, sort = TRUE, sortL = \"z\")",
+      "files": ["net_nc_sort_decreasing_nodes", "net_nc_sort_decreasing_links"]
+    },
+    "net_nc_nomeans": {
+      "call": "netCorr(mt, means = FALSE, frequency = TRUE)",
+      "files": ["net_nc_nomeans_nodes", "net_nc_nomeans_links"]
+    },
+    "net_nc_nodes": {
+      "call": "netCorr(mt, nodes = nc_nodes_es, language = \"es\", color = \"grp\")",
+      "files": ["net_nc_nodes_nodes", "net_nc_nodes_links"]
+    },
+    "net_nc_layout_pc": {
+      "call": "netCorr(mt, layout = \"pc\")",
+      "files": ["net_nc_layout_pc_nodes", "net_nc_layout_pc_links"]
+    },
+    "net_nc_layout_pc_nodes": {
+      "call": "netCorr(mt, nodes = nc_nodes, layout = \"pc\")",
+      "files": ["net_nc_layout_pc_nodes_nodes", "net_nc_layout_pc_nodes_links"]
+    },
+    "net_nc_options": {
+      "call": "netCorr(mt, lwidth = \"z\", lcolor = \"p\", size = \"mean\", color = \"std\", main = \"Cars\")",
+      "files": ["net_nc_options_nodes", "net_nc_options_links"]
+    },
+    "net_nc_d_default": {
+      "call": "d_netCorr(blocks, sequence = seq(.2, 1, .05))",
+      "files": ["net_nc_d_default_nodes", "net_nc_d_default_links"]
+    },
+    "net_nc_d_pc": {
+      "call": "d_netCorr(blocks, factorial = \"pc\", sequence = seq(.2, 1, .05), method = \"spearman\")",
+      "files": ["net_nc_d_pc_nodes", "net_nc_d_pc_links"]
+    },
+    "net_nc_d_fact": {
+      "call": "d_netCorr(blocks, factorial = c(\"pc\",\"nf\",\"vf\"), sequence = seq(.2, 1, .05), weight = NULL)",
+      "files": ["net_nc_d_fact_nodes", "net_nc_d_fact_links"]
+    },
+    "net_nc_d_all": {
+      "call": "d_netCorr(blocks, components = FALSE, sequence = seq(.3, .9, .1), means = FALSE)",
+      "files": ["net_nc_d_all_nodes", "net_nc_d_all_links"]
+    },
+    "net_nc_d_back": {
+      "call": "d_netCorr(blocks, backcomponents = TRUE, sequence = seq(.2, 1, .05), textFilter = c(.5, .1))",
+      "files": ["net_nc_d_back_nodes", "net_nc_d_back_links"]
     }
   }
 }

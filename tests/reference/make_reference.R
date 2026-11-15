@@ -625,5 +625,94 @@ sur_case("cob_default", 'cobCoin(ess, c("Gender","Age","Social participation","P
 sur_case("cob_args", 'cobCoin(ess, vars4, degree = 45, significance = .1, language = "es", main = "CoWeb")',
          cobCoin(ess_w, vars4, degree = 45, significance = .1, language = "es", main = "CoWeb"))
 
+# --------------------------------------------------- netCorr / d_netCorr ----
+suppressMessages(library(GPArotation))       # layoutFact(..., "of") needs it
+mt <- data.frame(mtcars[, c("mpg", "disp", "hp", "drat", "wt", "qsec")], row.names = NULL)
+set.seed(2)
+mt_w <- cbind(mt, w = round(runif(nrow(mt), 0.3, 2), 2))
+mt_na <- mt
+mt_na[cbind(c(1, 4, 9, 15, 22, 30, 31, 5), c(1, 2, 3, 3, 5, 6, 4, 4))] <- NA
+small <- data.frame(a = round(rnorm(7), 3), b = round(rnorm(7), 3), c = round(rnorm(7), 3), d = round(rnorm(7), 3))
+small_ties <- data.frame(a = c(1, 2, 2, 3, 5, 5, 6, 8), b = c(2, 1, 4, 3, 3, 6, 8, 7),
+                         c = c(5, 3, 2, 8, 1, 4, 4, 9), d = c(0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5))
+small_na <- small; small_na[c(2, 5), 1] <- NA; small_na[3, 3] <- NA; small_na[7, 4] <- NA
+write_csv(mt, "corr_mt", dir_in); write_csv(mt_w, "corr_mt_w", dir_in); write_csv(mt_na, "corr_mt_na", dir_in)
+write_csv(small, "corr_small", dir_in); write_csv(small_ties, "corr_small_ties", dir_in)
+write_csv(small_na, "corr_small_na", dir_in)
+nc_nodes <- data.frame(name = c("qsec", "mpg", "wt", "extra"), grp = c("x", "y", "x", "z"), stringsAsFactors = FALSE)
+write_csv(nc_nodes, "corr_nodes", dir_in)
+nc_nodes_es <- nc_nodes; names(nc_nodes_es)[1] <- "nombre"
+write_csv(nc_nodes_es, "corr_nodes_es", dir_in)
+# variables in blocks, so that the components split as the threshold rises
+set.seed(5)
+lat <- matrix(rnorm(60 * 3), 60, 3)
+blocks <- data.frame(
+  a1 = lat[, 1] + rnorm(60, sd = .5), a2 = lat[, 1] + rnorm(60, sd = .8), a3 = lat[, 1] + rnorm(60, sd = 1.2),
+  b1 = lat[, 2] + rnorm(60, sd = .5), b2 = lat[, 2] + rnorm(60, sd = .9), b3 = lat[, 2] + .5 * lat[, 1] + rnorm(60, sd = 1),
+  c1 = lat[, 3] + rnorm(60, sd = .6), c2 = lat[, 3] + .3 * lat[, 2] + rnorm(60, sd = 1.1))
+blocks <- round(blocks, 3)
+write_csv(blocks, "corr_blocks", dir_in)
+
+nc_case <- function(id, call_txt, expr) {
+  tryCatch(net_case(paste0("nc_", id), call_txt, expr),
+           error = function(e) message("netCorr case ", id, " FAILED: ", conditionMessage(e)))
+}
+nc_case("default", "netCorr(mt)", netCorr(mt))
+for (mth in c("spearman", "kendall", "partial", "dcor"))
+  nc_case(mth, sprintf('netCorr(mt, method = "%s")', mth), netCorr(mt, method = mth))
+nc_case("multi", 'netCorr(mt, method = c("pearson","spearman","kendall"), criteria = "p(kendall)")',
+        netCorr(mt, method = c("pearson", "spearman", "kendall"), criteria = "p(kendall)"))
+nc_case("small", 'netCorr(small, method = c("spearman","kendall"), criteria = "p")',
+        netCorr(small, method = c("spearman", "kendall"), criteria = "p", maxL = 1))
+nc_case("small_one", 'netCorr(small, method = c("spearman","kendall"), linkBipolar = FALSE, maxL = 1)',
+        netCorr(small, method = c("spearman", "kendall"), linkBipolar = FALSE, maxL = 1))
+nc_case("small_ties", 'netCorr(small_ties, method = c("spearman","kendall"), maxL = 1)',
+        netCorr(small_ties, method = c("spearman", "kendall"), maxL = 1))
+nc_case("small_na", 'netCorr(small_na, pairwise = TRUE, method = c("spearman","kendall","pearson"), maxL = 1)',
+        netCorr(small_na, pairwise = TRUE, method = c("spearman", "kendall", "pearson"), maxL = 1))
+nc_case("weight", 'netCorr(mt_w, weight = "w", method = c("pearson","spearman","partial"))',
+        netCorr(mt_w, weight = "w", method = c("pearson", "spearman", "partial")))
+nc_case("weight_vector", 'netCorr(mt, weight = mt_w$w, method = "spearman")', netCorr(mt, weight = mt_w$w, method = "spearman"))
+nc_case("na_listwise", "netCorr(mt_na)", netCorr(mt_na))
+nc_case("na_pairwise", 'netCorr(mt_na, pairwise = TRUE, method = c("pearson","spearman","kendall","dcor"))',
+        netCorr(mt_na, pairwise = TRUE, method = c("pearson", "spearman", "kendall", "dcor")))
+mt_naw <- cbind(mt_na, w = mt_w$w)
+nc_case("na_pairwise_weight", 'netCorr(mt_na + w, weight = "w", pairwise = TRUE, method = c("pearson","spearman"))',
+        netCorr(mt_naw, weight = "w", pairwise = TRUE, method = c("pearson", "spearman")))
+nc_case("na_partial", 'netCorr(mt_na, pairwise = TRUE, method = "partial")', suppressWarnings(netCorr(mt_na, pairwise = TRUE, method = "partial")))
+nc_case("value", 'netCorr(mt, criteria = "value", minL = .5)', netCorr(mt, criteria = "value", minL = .5))
+nc_case("value_one", 'netCorr(mt, criteria = "value", minL = .5, maxL = .9, linkBipolar = FALSE)',
+        netCorr(mt, criteria = "value", minL = .5, maxL = .9, linkBipolar = FALSE))
+nc_case("one_sided", 'netCorr(mt, linkBipolar = FALSE)', netCorr(mt, linkBipolar = FALSE))
+nc_case("bonferroni", 'netCorr(mt, Bonferroni = TRUE, maxL = .05)', netCorr(mt, Bonferroni = TRUE, maxL = .05))
+nc_case("sort", 'netCorr(mt_na, pairwise = TRUE, sort = TRUE, decreasing = FALSE, sortL = "value", decreasingL = FALSE)',
+        netCorr(mt_na, pairwise = TRUE, sort = TRUE, decreasing = FALSE, sortL = "value", decreasingL = FALSE))
+nc_case("sort_decreasing", 'netCorr(mt_na, pairwise = TRUE, sort = TRUE, sortL = "z")', netCorr(mt_na, pairwise = TRUE, sort = TRUE, sortL = "z"))
+nc_case("nomeans", "netCorr(mt, means = FALSE, frequency = TRUE)", netCorr(mt, means = FALSE, frequency = TRUE))
+nc_case("nodes", 'netCorr(mt, nodes = nc_nodes_es, language = "es", color = "grp")', netCorr(mt, nodes = nc_nodes_es, language = "es", color = "grp"))
+nc_case("layout_pc", 'netCorr(mt, layout = "pc")', netCorr(mt, layout = "pc"))
+nc_case("layout_pc_nodes", 'netCorr(mt, nodes = nc_nodes, layout = "pc")', netCorr(mt, nodes = nc_nodes, layout = "pc"))
+nc_case("options", 'netCorr(mt, lwidth = "z", lcolor = "p", size = "mean", color = "std", main = "Cars")',
+        netCorr(mt, lwidth = "z", lcolor = "p", size = "mean", color = "std", main = "Cars"))
+
+# distance correlation and factor layouts
+for (f in c("pc", "nf", "vf", "of")) {
+  L <- netCoin:::layoutFact(blocks, f)
+  write_matrix_plain(L, paste0("layoutfact_", f))
+}
+Lall <- netCoin:::layoutFact(blocks, c("pc", "nf", "vf", "of"))
+write_json(list(names = names(Lall)), file.path(dir_out, "layoutfact_names.json"), auto_unbox = TRUE)
+
+dn_seq <- seq(.2, 1, .05)
+nc_case("d_default", "d_netCorr(blocks, sequence = seq(.2, 1, .05))", d_netCorr(blocks, sequence = dn_seq))
+nc_case("d_pc", 'd_netCorr(blocks, factorial = "pc", sequence = seq(.2, 1, .05), method = "spearman")',
+        d_netCorr(blocks, factorial = "pc", sequence = dn_seq, method = "spearman"))
+nc_case("d_fact", 'd_netCorr(blocks, factorial = c("pc","nf","vf"), sequence = seq(.2, 1, .05), weight = NULL)',
+        d_netCorr(blocks, factorial = c("pc", "nf", "vf"), sequence = dn_seq))
+nc_case("d_all", "d_netCorr(blocks, components = FALSE, sequence = seq(.3, .9, .1), means = FALSE)",
+        d_netCorr(blocks, components = FALSE, sequence = seq(.3, .9, .1), means = FALSE))
+nc_case("d_back", "d_netCorr(blocks, backcomponents = TRUE, sequence = seq(.2, 1, .05), textFilter = c(.5, .1))",
+        d_netCorr(blocks, backcomponents = TRUE, sequence = dn_seq, textFilter = c(.5, .1)))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

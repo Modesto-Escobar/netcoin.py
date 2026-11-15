@@ -123,6 +123,15 @@ def compare_options(actual: dict, expected: dict, case: str):
                 assert g == v, f"{case}/{key}: {g!r} != {v!r}"
 
 
+def _as_text(x) -> str:
+    """A cell as text for comparing mixed columns (numbers with 15 digits, as R prints them)."""
+    if not isinstance(x, str) and pd.isna(x):
+        return "NA"
+    if isinstance(x, (float, np.floating)):
+        return f"{x:.15g}"
+    return str(x)
+
+
 def compare_frame(actual: pd.DataFrame, expected: pd.DataFrame, label: str, rtol=1e-8,
                   up_to_sign=(), skip=()):
     """Same columns, rows and values (``skip``: columns not compared, ``up_to_sign``: sign free)."""
@@ -138,7 +147,7 @@ def compare_frame(actual: pd.DataFrame, expected: pd.DataFrame, label: str, rtol
                 a = -a
             np.testing.assert_allclose(a, e, rtol=rtol, atol=1e-7, equal_nan=True, err_msg=f"{label}/{col}")
         else:
-            norm = lambda s: s.map(lambda x: "NA" if pd.isna(x) else str(x))
+            norm = lambda s: s.map(_as_text)
             assert norm(a).tolist() == norm(e).tolist(), f"{label}/{col}"
 
 

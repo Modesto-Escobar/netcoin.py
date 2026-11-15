@@ -66,6 +66,142 @@ def layout_pca(coincidences: Coin | pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(_fix_signs(coords), index=matrix.index, columns=["F1", "F2"])
 
 
+def _sort_loadings(loadings: np.ndarray) -> np.ndarray:
+    """Order the factors by their sum of squares and make each one mostly positive (R's ``sortLoadings``)."""
+    order = np.argsort(-(loadings ** 2).sum(axis=0), kind="stable")
+    loadings = loadings[:, order]
+    flip = loadings.sum(axis=0) < 0
+    loadings[:, flip] = -loadings[:, flip]
+    return loadings
+
+
+def _factanal_ml(corr: np.ndarray, factors: int) -> np.ndarray:
+    """Maximum likelihood factor loadings of a correlation matrix (R's ``factanal.fit.mle``)."""
+    from scipy.optimize import minimize
+
+    p = corr.shape[0]
+
+    def eig(psi):
+        scaled = corr / np.sqrt(np.outer(psi, psi))
+        values, vectors = np.linalg.eigh(scaled)
+        order = np.argsort(values)[::-1]
+        return values[order], vectors[:, order]
+
+    def loadings_of(psi):
+        values, vectors = eig(psi)
+        load = vectors[:, :factors] * np.sqrt(np.maximum(values[:factors] - 1, 0))
+        return np.sqrt(psi)[:, None] * load
+
+    def objective(psi):
+        values = eig(psi)[0][factors:]
+        return -(np.sum(np.log(values) - values) - factors + p)
+
+    def gradient(psi):
+        load = loadings_of(psi)
+        g = load @ load.T + np.diag(psi) - corr
+        return np.diag(g) / psi ** 2
+
+    scale = 0.01                                    # R optimises with parscale = 0.01
+    start = (1 - 0.5 * factors / p) / np.diag(np.linalg.inv(corr))
+    result = minimize(lambda u: objective(u * scale), start / scale, jac=lambda u: gradient(u * scale) * scale,
+                      method="L-BFGS-B", bounds=[(0.005 / scale, 1 / scale)] * p, options={"gtol": 0, "maxiter": 1000})
+    if not result.success and result.status != 2:
+        raise ValueError("unable to optimize the factor analysis")
+    return loadings_of(result.x * scale)
+
+
+def _varimax(x: np.ndarray, eps: float = 1e-5) -> np.ndarray:
+    """Varimax rotation with Kaiser normalisation (R's ``stats::varimax``)."""
+    p, k = x.shape
+    scale = np.sqrt((x ** 2).sum(axis=1))
+    x = x / scale[:, None]
+    rotation, d = np.eye(k), 0.0
+    for _ in range(1000):
+        z = x @ rotation
+        b = x.T @ (z ** 3 - z @ np.diag((z ** 2).sum(axis=0)) / p)
+        u, s, vt = np.linalg.svd(b)
+        rotation = u @ vt
+        previous, d = d, s.sum()
+        if d < previous * (1 + eps):
+            break
+    return (x @ rotation) * scale[:, None]
+
+
+def _oblimin(a: np.ndarray, eps: float = 1e-5, maxit: int = 2000) -> np.ndarray:
+    """Direct oblimin (quartimin) rotation by gradient projection (the ``GPArotation`` default)."""
+    k = a.shape[1]
+
+    def criterion(loadings):
+        weights = (loadings ** 2).sum(axis=1, keepdims=True) - loadings ** 2
+        return (loadings ** 2 * weights).sum() / 4, loadings * weights
+
+    t = np.eye(k)
+    inverse = np.linalg.inv(t)
+    loadings = a @ inverse.T
+    f, gq = criterion(loadings)
+    grad = -(loadings.T @ gq @ inverse).T
+    alpha = 1.0
+    for _ in range(maxit + 1):
+        gp = grad - t @ np.diag((t * grad).sum(axis=0))
+        s = np.sqrt((gp ** 2).sum())
+        if s < eps:
+            break
+        alpha *= 2
+        for _ in range(11):
+            x = t - alpha * gp
+            candidate = x / np.sqrt((x ** 2).sum(axis=0))
+            inverse_c = np.linalg.inv(candidate)
+            loadings = a @ inverse_c.T
+            f_new, gq = criterion(loadings)
+            if f - f_new > 0.5 * s ** 2 * alpha:
+                break
+            alpha /= 2
+        t, f = candidate, f_new
+        inverse = inverse_c
+        grad = -(loadings.T @ gq @ inverse).T
+    return loadings
+
+
+_FACT_NAMES = {"pc": "Principal Components", "nf": "Non-rotated Factorial",
+               "vf": "Varimax factorial", "of": "Oblimin factorial"}
+
+
+def layout_fact(data: pd.DataFrame, method="pc"):
+    """Coordinates of the variables from their loadings on two components or factors.
+
+    Port of ``layoutFact``. ``method`` is any of ``"pc"`` (principal components of the
+    correlations), ``"nf"`` (maximum likelihood factors, not rotated), ``"vf"`` (varimax) and
+    ``"of"`` (oblimin), or ``"null"`` for no layout. The cases with a missing value are left
+    out. One method gives a DataFrame (``Comp.1``, ``Comp.2`` or ``Factor1``, ``Factor2``, one
+    row per variable); several give a dict of them named as in R. The sign of each axis is
+    arbitrary, as it is in R.
+    """
+    methods = [method] if isinstance(method, str) else list(method)
+    unknown = sorted(set(methods) - {"null", "pc", "nf", "vf", "of"})
+    if unknown:
+        warnings.warn(", ".join(unknown) + " method is not implemented. ")
+    if methods[0] == "null":
+        return None
+    clean = data.dropna()
+    names = list(clean.columns)
+    corr = np.corrcoef(clean.to_numpy(dtype=float), rowvar=False)
+    out = {}
+    if "pc" in methods:
+        values, vectors = np.linalg.eigh(corr)
+        order = np.argsort(values)[::-1][:2]
+        out[_FACT_NAMES["pc"]] = pd.DataFrame(vectors[:, order], index=names, columns=["Comp.1", "Comp.2"])
+    if {"nf", "vf", "of"} & set(methods):
+        load = _sort_loadings(_factanal_ml(corr, 2))
+        rotations = {"nf": None, "vf": _varimax, "of": _oblimin}
+        for key in ("nf", "vf", "of"):
+            if key in methods:
+                rotated = load if rotations[key] is None else _sort_loadings(rotations[key](load))
+                out[_FACT_NAMES[key]] = pd.DataFrame(rotated, index=names, columns=["Factor1", "Factor2"])
+    if not out:
+        return None
+    return next(iter(out.values())) if len(out) == 1 else out
+
+
 def layout_special(layout, special: dict):
     """Replace the layout names that only the calling function can compute.
 

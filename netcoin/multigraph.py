@@ -14,6 +14,7 @@ from copy import deepcopy
 from shutil import copytree
 from typing import Sequence
 
+import numpy as np
 import pandas as pd
 
 from .core import netCoin
@@ -94,8 +95,11 @@ def _chr(value) -> str:
   """``as.character`` of one value; missing values are blank."""
   if value is None or (isinstance(value, float) and value != value):
     return ""
-  if isinstance(value, float) and value.is_integer():
-    return str(int(value))
+  if isinstance(value, (float, np.floating)):
+    value = float(value)
+    if value.is_integer() and abs(value) < 1e15:
+      return str(int(value))
+    return f"{value:.15g}"                 # as.character shows 15 significant digits
   return str(value)
 
 

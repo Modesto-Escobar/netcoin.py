@@ -139,6 +139,23 @@ web = cob_coin(survey, ["sex", "age", "works"], degree=90, significance=0.05)
 web.plot()
 ```
 
+### From quantitative variables
+
+`net_corr` makes every numeric column a node (with its mean, standard deviation and range) and
+every pair a link with the correlation (`value`), its contrast (`z`, `p`) and, with `pairwise`,
+the number of cases. `method` is `"pearson"`, `"spearman"`, `"kendall"`, `"partial"` or
+`"dcor"` (distance correlation), alone or several at once; weights and missing values are
+supported, and small samples use the exact tests. `d_net_corr` shows how the network breaks
+into components as the threshold of the correlation rises.
+
+```python
+from netcoin import net_corr, d_net_corr
+
+net = net_corr(cars, method=["pearson", "spearman"], layout="pc", main="Correlations")
+evolving = d_net_corr(cars, factorial="pc", sequence=[0.3, 0.5, 0.7, 0.9],
+                      directory="corr_evolving")
+```
+
 ### Drawing options
 
 `netCoin` has the arguments of the R function, in `snake_case`; the tables are DataFrames
@@ -226,6 +243,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
 | Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
 | Networks from a survey, CoWeb     | `sur_coin(...)`, `cob_coin(...)`           |
+| Networks of correlations          | `net_corr(...)`, `d_net_corr(...)`, `layout_fact(...)` |
 | Layouts from coincidences         | `layout_mca(...)`, `layout_pca(...)`       |
 
 Visualisations are powered by D3.js. All required web assets (`d3.min.js`,

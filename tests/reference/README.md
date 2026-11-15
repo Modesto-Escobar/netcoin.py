@@ -43,6 +43,9 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 | `surCoin(nodes = , metric = )` | The metric variables listed in `nodes` are reported as "not present in the data frame". Python does not mention them. |
 | `surCoin(metric = )` with an undefined correlation | A constant variable gives `NaN`, which turns into rows of `NA` in the links. Python leaves those links out. |
 | `cobCoin(dir = )` | The page is written by the inner `surCoin` before the links are filtered. Python writes the final network. |
+| `netCorr(nodes = , layout = "pc")` | The coordinates of `layoutPCA` stay in the order of the correlation matrix while the nodes are re-ordered by `merge()`, so each node gets the coordinates of another one. Python aligns them by name (`layout_pc_nodes` is a strict xfail). |
+| `toIgraph()` (rD3plot) | For the links it looks for the options `lwidth`, `lweight`, `lcolor` and `ltext`, which are called `linkWidth`... in the object, so the width, weight, colour and text never reach the igraph graph. Python maps them. In `d_netCorr` this makes R's `wdegree` equal to `degree`; the tests leave that column out. |
+| `d_netCorr` eigenvector centrality | For frames with several components the eigenvector is not unique (ARPACK returns different values); the tests leave that column out. |
 | group numbers of communities | The numbers `G.1`, `G.2`... come from the algorithm's internals; the groups are the same but may be numbered differently (the tests compare the partition). |
 
 ### Replicated on purpose
