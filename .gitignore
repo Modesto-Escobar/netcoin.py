@@ -28,3 +28,6 @@ Thumbs.db
 # Local demos / outputs not part of the package
 gender/
 python_examples/tmp/
+
+# Tooling
+.pytest_cache/

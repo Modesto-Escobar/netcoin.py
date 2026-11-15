@@ -2,7 +2,7 @@
 
 <!-- badges: start -->
 [![License: GPL (>= 2)](https://img.shields.io/badge/license-GPL%20(%3E%3D%202)-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
-[![Python](https://img.shields.io/badge/python-%3E%3D3.8-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.9-blue.svg)](https://www.python.org/)
 <!-- badges: end -->
 
 **netcoin** is the Python port of the R package
@@ -48,11 +48,12 @@ Or clone the repository and install in editable mode for local development:
 ```bash
 git clone https://github.com/Modesto-Escobar/netcoin.py.git
 cd netcoin.py
-pip install -e .
+pip install -e ".[dev]"
+python -m pytest
 ```
 
 Runtime dependencies (installed automatically): `pandas`, `numpy`, `scipy`.
-Python 3.8 or newer is required.
+Python 3.9 or newer is required.
 
 ## Quick start
 
@@ -67,9 +68,11 @@ nodes = {
     "size":     [10, 20, 15, 25],
 }
 
+# Numeric Source/Target values are 1-based positions in ``nodes``
+# (as in the R package); string values are matched against ``name``.
 links = {
-    "Source": [0, 1, 0, 2],
-    "Target": [1, 2, 3, 3],
+    "Source": [1, 2, 1, 3],
+    "Target": [2, 3, 4, 4],
     "weight": [0.5, 0.8, 0.3, 0.9],
 }
 
@@ -106,8 +109,8 @@ print(cooc)
 ```python
 from netcoin import sim, edge_list
 
-similarities = sim(df, procedures="j")     # Jaccard by default
-edges        = edge_list(df, procedures="j")
+similarities = sim(df, procedures="j")     # Jaccard
+edges        = edge_list(df, procedures="j", criteria="j", min=0)
 ```
 
 ## Main features
@@ -134,7 +137,7 @@ several real datasets (Galápagos finches, Italian Renaissance families,
 artworks, etc.). Run, for instance:
 
 ```bash
-python python_examples/python_netCoin_example.py
+python python_examples/python_net_Coin_example.py
 ```
 
 The generated `index.html` can be opened directly in a browser.

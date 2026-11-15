@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import numpy as np
 import pandas as pd
@@ -121,6 +123,37 @@ def _is_square_dataframe(df):
     return isinstance(df, pd.DataFrame) and df.shape[0] == df.shape[1]
 
 
+def _looks_like_cooccurrence(df):
+    """True if ``df`` looks like a co-occurrence matrix (as built by ``coin``).
+
+    A co-occurrence matrix is square, has the same labels on rows and columns,
+    is symmetric (or has only its lower triangle filled) and every off-diagonal
+    count is bounded by the diagonal counts of its row and column. A square
+    incidence table (as many cases as variables) does not meet all of these,
+    so it is no longer mistaken for a co-occurrence matrix.
+    """
+    if not _is_square_dataframe(df):
+        return False
+    if list(df.index) != list(df.columns):
+        return False
+
+    a = df.apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
+    lower = np.tril(a)
+    upper_vals = a[np.triu_indices_from(a, k=1)]
+    lower_vals = a.T[np.triu_indices_from(a, k=1)]
+    both = ~np.isnan(upper_vals) & ~np.isnan(lower_vals)
+    if both.any() and not np.allclose(upper_vals[both], lower_vals[both]):
+        return False
+
+    sym = np.where(np.isnan(a), a.T, a)
+    diag = np.diag(sym)
+    if np.isnan(diag).any():
+        return False
+    bound = np.minimum(diag[:, None], diag[None, :])
+    off = ~np.eye(len(diag), dtype=bool)
+    return bool(np.all(sym[off & ~np.isnan(sym)] <= bound[off & ~np.isnan(sym)]))
+
+
 def _mask_by_diag(df, minimum=1, maximum=np.inf):
     diag_vals = np.diag(df.to_numpy())
     keep = (diag_vals >= minimum) & (diag_vals <= maximum)
@@ -163,7 +196,7 @@ def _prepare_counts(
 
     inferred_type = input_type
     if input_type == "auto":
-        inferred_type = "cooccurrence" if _is_square_dataframe(data) else "binary"
+        inferred_type = "cooccurrence" if _looks_like_cooccurrence(data) else "binary"
 
     if inferred_type == "binary":
         x_bin = _to_numeric_binary_df(data)
@@ -596,7 +629,7 @@ def edge_list(
         max = 0.50
 
     if bonferroni:
-        n_pairs = math.comb(data.shape[0], 2)
+        n_pairs = math.comb(data.shape[1], 2)  # number of variables
         if n_pairs > 0:
             max /= n_pairs
 
@@ -604,22 +637,21 @@ def edge_list(
         ([sort_norm] if sort_norm else []) + procedures + [criteria]
     ))
 
-    if support > -np.inf and "cc" not in all_procs:
-        all_procs.append("cc")
+    # Coincidence counts are always needed (for ``support``) and come from
+    # ``sim`` so that they match the rows/columns kept by it; they only appear
+    # in the output if the user asked for them.
+    wants_cc = "cc" in all_procs
+    sim_procs = all_procs if wants_cc else all_procs + ["cc"]
 
-    sim_result = sim(data, all_procs, level=level)
+    sim_result = sim(data, sim_procs, level=level)
 
     if not isinstance(sim_result, dict):
-        internal = _PROCEDURE_ALIASES[all_procs[0]]
+        internal = _PROCEDURE_ALIASES[sim_procs[0]]
         sim_result = {internal: sim_result}
 
-    if "coincidences" in sim_result:
-        a_matrix = sim_result["coincidences"].to_numpy(dtype=float)
-    else:
-        a_raw = data.apply(pd.to_numeric, errors="coerce").astype(float).to_numpy()
-        i_upper = np.triu_indices_from(a_raw, k=1)
-        a_raw[i_upper] = a_raw.T[i_upper]
-        a_matrix = a_raw
+    a_matrix = sim_result["coincidences"].to_numpy(dtype=float)
+    if not wants_cc:
+        sim_result = {k: v for k, v in sim_result.items() if k != "coincidences"}
 
     any_mat = next(v for v in sim_result.values() if isinstance(v, pd.DataFrame))
     labels = list(any_mat.index)
