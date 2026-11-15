@@ -155,7 +155,7 @@ Visualisations are powered by D3.js. All required web assets (`d3.min.js`,
 templates, stylesheets and language files for English, Spanish and Catalan)
 ship with the package under `netcoin/www/` and are copied to the output
 directory automatically. They are the engine of the R package
-[rD3plot](https://github.com/Modesto-Escobar/rD3plot) (version recorded in
+rD3plot (version recorded in
 `netcoin/www/SOURCE.json`); to update them run
 `python tools/sync_www.py --source <path to rD3plot>`.
 
