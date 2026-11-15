@@ -2,3 +2,4 @@ include README.md
 include LICENSE
 recursive-include netcoin/www *
 include netcoin/colors.json
+recursive-include docs *.md

@@ -294,6 +294,31 @@ def cluster_match(x, model, columns=None, weights=None, align: bool = True, weig
     groups, its modal group. The result has one row per classification; its ``attrs`` hold ``model``,
     ``unit``, ``weights``, ``spanning``, ``tables``, ``byClass``, ``mapping`` and ``ties`` (the
     classifications for which several matchings were equally good: R may pick another of them).
+
+    Parameters
+    ----------
+    x : netCoin
+        A scattergram made by :func:`sur_scat`.
+    model : str or sequence
+        A node column, or a vector (per node, or per case when the nodes are patterns).
+    columns : list of str, optional
+        The classifications compared.
+    weights : str or sequence, optional
+        Weight of each node (a column or a vector).
+    align, weighted, modal : bool
+        See above.
+    sort : str or list of str, optional
+        Column(s) to sort by, from the largest down; a ``"-"`` prefix sorts from the smallest up.
+    digits : int
+        Decimals of the result.
+    model_name : str, optional
+        Name of the model when it is a vector.
+
+    Returns
+    -------
+    DataFrame
+        One row per classification: ``Classification``, ``k``, ``N``, ``Accuracy``, ``Kappa``, ``Sensitivity``,
+        ``Precision``, ``F1`` and ``Specificity`` (macro means; ``.w`` are the weighted ones).
     """
     s = match_setup(x, model, model_name or (model if isinstance(model, str) else "model"), columns, weights, modal,
                     True, "clusterMatch")
@@ -339,6 +364,21 @@ def cluster_agree(x, model, columns=None, weights=None, modal: bool = True, sort
 
     Port of ``clusterAgree``. The ``k`` column is that of each classification (the model's is in
     ``attrs['kModel']``).
+
+    Parameters
+    ----------
+    x : netCoin
+        A scattergram made by :func:`sur_scat`.
+    model : str or sequence
+        A node column, or a vector (per node, or per case when the nodes are patterns).
+    columns, weights, modal, sort, digits, model_name
+        As in :func:`cluster_match`.
+
+    Returns
+    -------
+    DataFrame
+        One row per classification: ``Classification``, ``k``, ``N``, ``ARI``, ``NMI``, ``VI`` and ``VI.n``
+        (the variation of information, raw and normalized).
     """
     s = match_setup(x, model, model_name or (model if isinstance(model, str) else "model"), columns, weights, modal,
                     False, "clusterAgree")

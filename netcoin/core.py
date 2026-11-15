@@ -214,6 +214,8 @@ class netCoin:
     directory : str, optional
         Write the page there.
 
+    Notes
+    -----
     The camelCase names of earlier versions (``nodeFilter``, ``showArrows``,
     ``defaultColor``...) still work but are deprecated; ``orderA``/``orderD`` became
     ``sort`` and ``decreasing``.

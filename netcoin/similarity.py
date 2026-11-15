@@ -533,6 +533,22 @@ def expected_list(
     Port of ``expectedList`` from the R package netCoin. With
     ``confidence=True`` it adds the upper/lower limit of the expectation
     (``confidence``; R uses a fixed 1.64, i.e. a one-sided 95 % level).
+
+    Parameters
+    ----------
+    data : Coin
+        The coincidences.
+    names : list of str, optional
+        Restrict the pairs to these variables.
+    min : float
+        Smallest number of coincidences of a pair to be listed.
+    confidence : bool
+        Add the limits of the expectation.
+
+    Returns
+    -------
+    DataFrame
+        One row per pair (``Source``, ``Target``, ``coincidences``, ``expected``, and the limits with ``confidence``).
     """
     if not isinstance(data, Coin):
         raise TypeError("data must be a Coin object (see coin())")

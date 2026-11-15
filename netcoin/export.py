@@ -108,6 +108,18 @@ def save_graphml(net, file: str = "netCoin.graphml") -> str:
 
     Categorical columns are written as text, since GraphML only has numbers, text and
     logical values.
+
+    Parameters
+    ----------
+    net : netCoin
+        The network.
+    file : str
+        Path of the file.
+
+    Returns
+    -------
+    str
+        The path written.
     """
     from .core import netCoin
     from .igraph_io import to_igraph

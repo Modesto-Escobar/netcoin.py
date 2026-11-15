@@ -63,6 +63,17 @@ def caring_read_file(filepath: str) -> pd.DataFrame:
 
     Text columns become categories, and those that hold only numbers become numeric. A Stata file
     takes the label of each variable as its name and labelled values become categories.
+
+    Parameters
+    ----------
+    filepath : str
+        ``.sav`` (needs ``pyreadstat``), ``.dta``, ``.xlsx`` (needs ``openpyxl``), or a delimited text file.
+        Both are in the ``files`` extra.
+
+    Returns
+    -------
+    DataFrame
+        One row per case.
     """
     ext = os.path.splitext(filepath)[1].lower().lstrip(".")
     if ext == "dta":
@@ -123,6 +134,23 @@ def caring_create_graphs(data: pd.DataFrame, arguments: Mapping, show: bool = Fa
     python's; ``plot`` lists, one after the other, the kind of network (``"surCoin"``, ``"surScat"``,
     ``"logCoin2"`` to ``"logCoin5"``, ``"allNet"``, ``"glmCoin"``) and the title it gets in the page;
     ``dir`` (or ``directory``) is the folder to write.
+
+    Parameters
+    ----------
+    data : DataFrame
+        One row per case.
+    arguments : mapping
+        The keys of the R function (``variables``, ``weight``, ``maxL``, ``criteria``, ``dichotomies``,
+        ``valueDicho``, ``metric``, ``exogenous``, ``chaine``, ``family``, ``nclustersMin``...) or their
+        python names (``max_l``...). ``plot`` is a list that alternates the kind of network and its title;
+        ``dir`` (or ``directory``) is the folder to write.
+    show : bool
+        Open the page in the browser when it is written.
+
+    Returns
+    -------
+    str
+        The folder that holds the page.
     """
     from .allnet import all_net
     from .glmcoin import glm_coin
@@ -341,5 +369,25 @@ def _glm_graph(data, args, translated, initial, pmax, glm_coin):
 
 
 def caring(filepath: str, arguments: Mapping, show: bool = False) -> str:
-    """Read ``filepath`` and write the page of networks that ``arguments`` ask for (see :func:`caring_create_graphs`)."""
+    """Read ``filepath`` and write the page of networks that ``arguments`` ask for (see :func:`caring_create_graphs`).
+
+    Parameters
+    ----------
+    filepath : str
+        Data file (``.sav``, ``.dta``, ``.xlsx`` or delimited text); see :func:`caring_read_file`.
+    arguments : mapping
+        What to draw and how; see :func:`caring_create_graphs`.
+    show : bool
+        Open the page in the browser when it is written.
+
+    Returns
+    -------
+    str
+        The folder that holds the page.
+
+    Examples
+    --------
+    >>> caring("survey.sav", {"variables": ["gender", "age", "works"], "plot": ["surCoin", "Associations"],
+    ...                       "dir": "out"})  # doctest: +SKIP
+    """
     return caring_create_graphs(caring_read_file(filepath), arguments, show=show)

@@ -33,6 +33,15 @@ def to_igraph(net):
     ``fx``/``fy`` become ``x``/``y``) and the edges the link table (``width``,
     ``weight``, ``color``, ``label`` likewise). The graph is directed if
     ``show_arrows`` was set.
+
+    Parameters
+    ----------
+    net : netCoin
+        The network.
+
+    Returns
+    -------
+    igraph.Graph
     """
     ig = require_igraph()
     options = net.options
@@ -80,6 +89,17 @@ def from_igraph(graph, **kwargs):
     and ``shape`` (vertices) or ``width``, ``weight``, ``color`` and ``label`` (edges)
     are used for the corresponding argument unless you give it. Other keyword
     arguments go to :class:`netCoin`.
+
+    Parameters
+    ----------
+    graph : igraph.Graph
+        The graph.
+    **kwargs
+        Arguments of :class:`netCoin`.
+
+    Returns
+    -------
+    netCoin
     """
     from .core import netCoin
 

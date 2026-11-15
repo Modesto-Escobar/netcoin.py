@@ -252,6 +252,13 @@ class Cooc:
 
     ``n`` is the total number of occurrences and ``m`` the sum, over the cases,
     of the largest occurrence of each case.
+
+    Attributes
+    ----------
+    matrix : DataFrame
+        Square matrix of shared occurrences (the diagonal holds the totals).
+    n, m : float
+        Total occurrences and sum of the largest occurrence of each case.
     """
 
     matrix: pd.DataFrame
@@ -276,6 +283,19 @@ def coocur(
 
     Port of ``coocur`` from the R package netCoin. Unlike :func:`coin`, the
     variables need not be 0/1.
+
+    Parameters
+    ----------
+    ocurrences : DataFrame or array
+        One row per case and one column per variable, with counts.
+    minimum, maximum : float
+        Keep the variables whose total lies in this range.
+    sort, decreasing : bool
+        Sort the variables by their totals.
+
+    Returns
+    -------
+    Cooc
     """
     df = ocurrences if isinstance(ocurrences, pd.DataFrame) else pd.DataFrame(ocurrences)
     x = df.apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
@@ -342,6 +362,20 @@ def as_nodes(
     Port of ``asNodes`` from the R package netCoin. If ``data`` is an edge list
     (with ``Source`` and ``Target`` columns) the nodes are the sorted names found
     in it.
+
+    Parameters
+    ----------
+    data : Coin or DataFrame
+        The coincidences, or an edge list.
+    frequency, percentages : bool
+        Add the frequency and/or the percentage of each variable.
+    language : {"en", "es", "ca"}
+        Language of the column names.
+
+    Returns
+    -------
+    DataFrame
+        One row per node, ready for :class:`netCoin`.
     """
     name = getByLanguage(nameList, language)
     if isinstance(data, Coin):

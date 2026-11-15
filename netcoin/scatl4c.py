@@ -313,6 +313,40 @@ def add_communities(net, data: pd.DataFrame, variables=None, community="lo", sca
     The links of the network are weighed by their correlation (what the R code means to do). R's ``toIgraph``
     does not carry that weight over from the network of ``netCorr``, so R finds the communities of the
     unweighted network; ``weighted=False`` does the same here.
+
+    Parameters
+    ----------
+    net : netCoin
+        A scattergram made by :func:`sur_scat`.
+    data : DataFrame
+        The table the scattergram was drawn from.
+    variables : list of str, optional
+        The variables the cases are compared over (all by default); numeric or ordered categorical.
+    community : str or list of str
+        The methods, by code or name.
+    scale : bool
+        Standardize each variable first.
+    method, criteria, min_link, max_link, pairwise
+        Passed to :func:`net_corr`, which builds the network of the cases (links need ``|r| >= min_link`` by default 0.95).
+    min_size : float
+        Communities smaller than this (a proportion if below 1, a count otherwise) go into a residual group.
+    max_communities : int, optional
+        At most this many groups, the residual one among them.
+    name : str, optional
+        Name of the column (``name.method(k)`` with several methods).
+    sort, weight, max_groups
+        As in :func:`add_clusters`.
+    max_nodes : float, optional
+        Override the size each method can bear (``optimal`` 100, ``edgeBetweenness`` and ``spinglass`` 2000).
+    seed : int, optional
+        Seed of the methods that draw at random (louvain, labelProp, spinglass).
+    weighted : bool
+        Weigh the links by their correlation; ``False`` reproduces R.
+
+    Returns
+    -------
+    netCoin
+        A modified copy with one cluster column per method, named ``method(k)``.
     """
     from .igraph_io import to_igraph
     from .layouts import compute_membership, require_igraph

@@ -157,6 +157,30 @@ def layouts_align(net, align: str = "procrustes", to=1, gpa: bool = False, weigh
     rest are brought to (name or 1-based index); with ``gpa`` every plane is rotated towards the mean of
     them all. With ``suffix`` the originals stay and the aligned planes are added, right after their
     own, under their name and the suffix; otherwise they take the place of the originals.
+
+    Parameters
+    ----------
+    net : netCoin
+        A scattergram with more than one plane.
+    align : {"procrustes", "cloud", "canvas", "none"}
+        How the planes are laid over one another.
+    to : int or str
+        The plane the rest are brought to (1-based position or name).
+    gpa : bool
+        Rotate every plane towards the mean of them all (generalized Procrustes).
+    weights : sequence or str, optional
+        Weight of each node in the fit.
+    which : sequence, optional
+        The planes to align (all by default).
+    suffix : str, optional
+        Keep the originals and add the aligned planes under their name followed by ``suffix``.
+    tol, maxit : float, int
+        Convergence of the generalized Procrustes iteration.
+
+    Returns
+    -------
+    netCoin
+        A modified copy.
     """
     if align not in ("procrustes", "cloud", "canvas", "none"):
         raise ValueError(f"{who}: align must be 'procrustes', 'cloud', 'canvas' or 'none'")
@@ -398,6 +422,26 @@ def add_axes(net, axes, name: str | None = None, which=None, weight=None, axes_l
     several); ``weight`` weighs the cases when they are collapsed into patterns. The coordinates already
     drawn become the first plane. ``axes_labels``: ``None`` (the default) lets every plane keep its own
     axis titles, a pair puts the same titles on every plane, and ``"keep"`` leaves what the object had.
+
+    Parameters
+    ----------
+    net : netCoin
+        A scattergram made by :func:`sur_scat`.
+    axes : DataFrame, list, dict or Looking4Clusters
+        The coordinates, one pair of columns per plane.
+    name : str, optional
+        Name of the plane (a prefix when there are several).
+    which : optional
+        For a :class:`Looking4Clusters`, which reductions to add.
+    weight : sequence, optional
+        Weight of each case, used when the cases are collapsed into patterns.
+    axes_labels : None, "keep" or pair of str
+        Titles of the axes; see above.
+
+    Returns
+    -------
+    netCoin
+        A modified copy; the planes are in ``net.layouts``.
     """
     if not isinstance(net, netCoin):
         raise TypeError("net must be a netCoin object returned by sur_scat")
@@ -521,6 +565,31 @@ def add_clusters(net, clusters, name: str | None = None, sort: bool = True, weig
     (every clusterization it holds, or the one ``which`` chooses). The groups are renumbered from left
     to right on the first axis when ``sort``. ``max_groups`` skips clusterizations with more groups
     (a continuous variable passed by mistake); ``rest`` is the number of a residual group.
+
+    Parameters
+    ----------
+    net : netCoin
+        A scattergram made by :func:`sur_scat`.
+    clusters : sequence, DataFrame, clusterer or Looking4Clusters
+        The groups.
+    name : str, optional
+        Name of the column (a prefix when there are several).
+    sort : bool
+        Renumber the groups from left to right on the first axis.
+    weight : sequence, optional
+        Weight of each node or case, for the centroids and the order of the groups.
+    which : optional
+        For a :class:`Looking4Clusters`, which clusterizations to add.
+    max_groups : int, optional
+        Skip clusterizations with more groups than this.
+    rest : int, optional
+        Number of the group that gathers what is left over.
+
+    Returns
+    -------
+    netCoin
+        A modified copy; the columns are added to ``net.nodes``, and the centroids of every group on every plane
+        to ``net.clusters``.
     """
     if not isinstance(net, netCoin):
         raise TypeError("net must be a netCoin object returned by sur_scat")
@@ -652,7 +721,20 @@ def _add_one_cluster(net, clusters, name, sort, weight, rest):
 
 def replace_clusters(net, clusters, name: str | None = None, sort: bool = True, weight=None, which=None,
                      max_groups: int | None = 25):
-    """Replace the cluster columns of a scattergram by new ones (``replaceClusters``)."""
+    """Replace the cluster columns of a scattergram by new ones (``replaceClusters``).
+
+    Parameters
+    ----------
+    net : netCoin
+        A scattergram made by :func:`sur_scat`.
+    clusters, name, sort, weight, which, max_groups
+        As in :func:`add_clusters`; the cluster columns the object held are removed first.
+
+    Returns
+    -------
+    netCoin
+        A modified copy.
+    """
     from .clusters import Looking4Clusters
 
     net = _copy(net)

@@ -165,6 +165,18 @@ def inc_time(data: pd.DataFrame, name: str = "name", beginning: str = "birth",
     Port of ``incTime``: a table with one row per year, from the first beginning to the
     last end, and one 0/1 column per person. An open end (missing) goes on forever.
     A missing beginning gives missing values.
+
+    Parameters
+    ----------
+    data : DataFrame
+        One row per person or period.
+    name, beginning, end : str
+        Columns with the name, the first year and the last year.
+
+    Returns
+    -------
+    DataFrame
+        One row per year, one 0/1 column per person.
     """
     start = pd.to_numeric(data[beginning], errors="coerce").to_numpy(dtype=float)
     stop = pd.to_numeric(data[end], errors="coerce").to_numpy(dtype=float)
@@ -183,6 +195,20 @@ def mobile_edges(data: pd.DataFrame, name: int | str = 0, number: int | str = 1,
     Port of ``mobileEdges``: ``sim.`` is ``1 + difference - |a - b|`` (at least 1) and
     ``dist.`` its complement ``1 + difference - sim.``. Use it, for instance, to link
     people born in the same period.
+
+    Parameters
+    ----------
+    data : DataFrame
+        One row per item.
+    name, number : int or str
+        Columns (position or name) with the item and its number.
+    difference : float
+        Largest difference of numbers that still links two items.
+
+    Returns
+    -------
+    DataFrame
+        An edge list (``Source``, ``Target``, ``sim.``, ``dist.``).
     """
     labels = data.iloc[:, name] if isinstance(name, int) else data[name]
     values = pd.to_numeric(data.iloc[:, number] if isinstance(number, int) else data[number],

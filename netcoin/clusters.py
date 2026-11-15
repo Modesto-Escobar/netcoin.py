@@ -157,6 +157,23 @@ class Looking4Clusters:
     ``optim`` holds the number of groups the method found best. ``reductions`` maps a name
     (``pca``, ``tsne``, ``cmds``...) to a DataFrame of two coordinates, and ``pctvar`` the
     percentage of the variance of those that have it.
+
+    Attributes
+    ----------
+    data : ndarray
+        The values clustered (samples by variables).
+    samples, variables : list of str
+        Their names.
+    options : dict
+        Options kept for the page (``groupStatsBy``, ``myGroups``).
+    clusters : dict
+        Name of the method to a categorical Series, or a DataFrame with a column per number of groups.
+    reductions : dict
+        Name of the reduction to a DataFrame of two coordinates.
+    optim : dict
+        The number of groups each method found best.
+    pctvar : dict
+        Percentage of variance of the first two axes of the reductions that have it.
     """
 
     data: np.ndarray

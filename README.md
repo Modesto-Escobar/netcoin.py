@@ -53,7 +53,18 @@ python -m pytest
 ```
 
 Runtime dependencies (installed automatically): `pandas`, `numpy`, `scipy`.
-Python 3.9 or newer is required.
+Python 3.9 or newer is required. The rest is installed by need, as extras:
+
+| Extra | Brings | Needed for |
+|---|---|---|
+| `igraph` | python-igraph | communities, centralities and layouts of igraph; `to_igraph`, `from_igraph`, `save_graphml`; `add_communities` |
+| `models` | statsmodels, patsy | `glm_coin` (and the regressions of `caring`) |
+| `cluster` | scikit-learn, umap-learn | k-means in `sur_scat`; k-means, t-SNE, NMF and UMAP in `looking4clusters` |
+| `files` | openpyxl, pyreadstat | `caring_read_file` of `.xlsx` and `.sav` |
+
+```bash
+pip install -e ".[igraph,models,cluster,files,dev]"
+```
 
 ## Quick start
 
@@ -214,6 +225,33 @@ The latent models are estimated here with their own EM (profiles with equal diag
 for quantitative variables, independent categorical variables inside each class for qualitative
 ones), not with mclust and poLCA.
 
+### Groups and views of the cases
+
+`looking4clusters` runs k-means, PAM and hierarchical clustering for 2 to 10 groups and projects
+the cases on two dimensions (PCA, classical MDS, t-SNE, NMF, UMAP). Its groups and planes can go
+into a scattergram (`add_clusters(scat, found)`, `add_axes(scat, found)`).
+
+```python
+from netcoin import looking4clusters
+
+found = looking4clusters(cases[["income", "hours"]], seed=1)
+found.optim                  # the number of groups each method found best (Calinski-Harabasz)
+found.reductions["pca"]      # two coordinates per case
+```
+
+### Several analyses in one page
+
+`caring` reads a data file (`.sav`, `.dta`, `.xlsx` or text) and writes a page with the networks that a
+dictionary of arguments asks for, with the keys of the R function:
+
+```python
+from netcoin import caring
+
+caring("survey.sav", {"variables": ["sex", "age", "works"], "weight": "cweight",
+                      "plot": ["surCoin", "Associations", "logCoin2", "Log-linear", "surScat", "Cases"],
+                      "dir": "page"})
+```
+
 ### Log-linear associations
 
 `log_coin` fits a log-linear model to the table of several categorical variables and draws the
@@ -333,6 +371,15 @@ rD3plot (version recorded in
 
 ## Documentation and examples
 
+The documentation is in [`docs/`](docs/index.md):
+
+- [User guide](docs/guide.md): from a table of cases to the networks of a survey (its code is tested).
+- [The scattergram](docs/scattergram.md): planes, groups, rotations, latent models, communities.
+- [From the R package to Python](docs/r-to-python.md): names, what is not ported and where the results
+  differ from R.
+- [Reference](docs/reference.md): every function with its parameters (generated from the docstrings by
+  `python tools/make_reference.py`).
+
 Runnable examples live in [`python_examples/`](python_examples/) and cover
 several real datasets (Galápagos finches, Italian Renaissance families,
 artworks, etc.). Run, for instance:
@@ -346,6 +393,13 @@ The generated `index.html` can be opened directly in a browser.
 For the conceptual background, the methodology and the full feature set, see
 the R package documentation at
 <https://modesto-escobar.github.io/netCoin/>.
+
+## Tests
+
+`python -m pytest` runs about 1,300 tests. Most compare the results with netCoin 2.1.49 for R, whose values
+are stored in `tests/reference/` (R is only needed to regenerate them with
+`Rscript tests/reference/make_reference.R`); where Python deliberately differs from R, or cannot give the
+same number, it is declared in `tests/reference/README.md`.
 
 ## Citation
 

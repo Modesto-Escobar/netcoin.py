@@ -30,6 +30,16 @@ def layout_mca(incidences: pd.DataFrame) -> pd.DataFrame:
     Port of ``layoutMCA``: classical correspondence analysis of the table of
     incidences completed with its complement. Returns principal coordinates
     ``F1`` and ``F2``, one row per variable.
+
+    Parameters
+    ----------
+    incidences : DataFrame
+        One row per case, one 0/1 column per variable.
+
+    Returns
+    -------
+    DataFrame
+        ``F1`` and ``F2``, one row per variable.
     """
     x = incidences.to_numpy(dtype=float)
     full = np.column_stack([x, 1 - x])
@@ -53,6 +63,16 @@ def layout_pca(coincidences: Coin | pd.DataFrame) -> pd.DataFrame:
 
     Port of ``layoutPCA``. Takes a :class:`Coin` (or a correlation matrix) and
     returns ``F1`` and ``F2``, one row per variable.
+
+    Parameters
+    ----------
+    coincidences : Coin or DataFrame
+        The coincidences, or a correlation matrix.
+
+    Returns
+    -------
+    DataFrame
+        ``F1`` and ``F2``, one row per variable.
     """
     if isinstance(coincidences, Coin):
         from .similarity import sim
@@ -175,6 +195,17 @@ def layout_fact(data: pd.DataFrame, method="pc"):
     out. One method gives a DataFrame (``Comp.1``, ``Comp.2`` or ``Factor1``, ``Factor2``, one
     row per variable); several give a dict of them named as in R. The sign of each axis is
     arbitrary, as it is in R.
+
+    Parameters
+    ----------
+    data : DataFrame
+        One numeric column per variable.
+    method : str or list of str
+        ``"pc"``, ``"nf"``, ``"vf"``, ``"of"`` or ``"null"``.
+
+    Returns
+    -------
+    DataFrame or dict of DataFrame
     """
     methods = [method] if isinstance(method, str) else list(method)
     unknown = sorted(set(methods) - {"null", "pc", "nf", "vf", "of"})
@@ -287,6 +318,17 @@ def layout_grid(nodes: pd.DataFrame, string: str, name: str | None = None,
 
     Returns a DataFrame ``x``, ``y`` in [0, 1] (``NaN`` for the nodes that are not in the
     text).
+
+    Parameters
+    ----------
+    nodes : DataFrame
+        The nodes (their ``name`` column or ``name`` is matched against the text).
+    string : str
+        The description of the grid.
+    name : str, optional
+        Column of ``nodes`` with the names.
+    byrow : bool
+        Read the grid by rows.
     """
     if not isinstance(string, str):
         warnings.warn("string: must be character")
