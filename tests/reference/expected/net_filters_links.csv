@@ -1,0 +1,15 @@
+"Source","Target","weight","type","note","hidden"
+"a","b",0.9,"p","l1",FALSE
+"a","c",0.5,"q","l2",FALSE
+"b","c",0.2,"r","l3",TRUE
+"c","d",0.7,"p","l4",FALSE
+"d","e",0.4,"q","l5",FALSE
+"e","f",0.8,"r","l6",FALSE
+"f","g",0.1,"p","l7",TRUE
+"g","h",0.6,"q","l8",FALSE
+"h","i",0.3,"r","l9",TRUE
+"i","j",0.95,"p","l10",FALSE
+"a","d",0.55,"q","l11",FALSE
+"c","e",0.25,"r","l12",TRUE
+"e","g",0.45,"p","l13",FALSE
+"g","i",0.75,"q","l14",FALSE

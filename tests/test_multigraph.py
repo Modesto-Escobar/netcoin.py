@@ -3,6 +3,7 @@ import json
 import subprocess
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from netcoin import multigraphCreate, netCoin
@@ -30,21 +31,20 @@ def _nets():
 def test_evolving_network_matches_r():
     net = evolvingNetwork(_nets(), frame=1, speed=30, loop=True, lineplots=["v", "degree", "bogus"])
     nodes = read_expected("evo_result_nodes", strings=True)
-    names = net["nodes"]["name"]
-    assert names == ["a", "b", "c", "d"]
+    assert net.nodes["name"].tolist() == ["a", "b", "c", "d"]
     for col in ["v", "g"]:
-        got = [x if isinstance(x, str) else ("" if x is None else str(int(x))) for x in net["nodes"][col]]
+        got = [x if isinstance(x, str) else ("" if pd.isna(x) else str(int(x))) for x in net.nodes[col]]
         want = ["" if x == "NA" else x for x in nodes[col]]
         assert got == want, col
 
     links = read_expected("evo_result_links")
     for col in ["w", "_frame_"]:
-        assert net["links"][col] == links[col].tolist(), col
-    assert [names[i] for i in net["links"]["Source"]] == links["Source"].tolist()
-    assert [names[i] for i in net["links"]["Target"]] == links["Target"].tolist()
+        assert net.links[col].tolist() == links[col].tolist(), col
+    assert net.links["Source"].tolist() == links["Source"].tolist()
+    assert net.links["Target"].tolist() == links["Target"].tolist()
 
     ref = json.loads((EXPECTED / "evo_result_options.json").read_text(encoding="utf-8"))
-    options = net["options"]
+    options = net.options
     assert options["frames"] == ref["frames"]
     assert options["frame"] == ref["frame"][0] and options["speed"] == ref["speed"][0]
     assert options["loop"] is True

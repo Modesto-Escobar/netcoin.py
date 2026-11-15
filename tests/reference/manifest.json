@@ -600,6 +600,162 @@
     "pie_links_numeric": {
       "call": "pieCoin(coin(galapagos), links = pie_links, lcolor = seq_len(nrow(pie_links)))",
       "files": "pie_links_numeric.json"
+    },
+    "net_basic": {
+      "call": "netCoin(nodes, links, label = \"label\", size = \"size\", color = \"group\", shape = \"kind\", group = \"group\", lwidth = \"weight\", lcolor = \"type\", ltext = \"note\", ntext = \"text\", info = \"text\", main = \"A network\", note = \"A note\", scenarios = 10)",
+      "files": ["net_basic_nodes", "net_basic_links"]
+    },
+    "net_single": {
+      "call": "netCoin(nodes, links, color = \"firebrick\", shape = \"Square\", lcolor = \"#00f\", size = 12, label = \"\", legend = \"kind\", border = \"group\", labelSize = \"size\")",
+      "files": ["net_single_nodes", "net_single_links"]
+    },
+    "net_numeric": {
+      "call": "netCoin(nodes, links, color = \"value\", nodeScaleLimits = c(0, 5, 14), lcolor = \"weight\", linkScaleLimits = c(0, 1), intensity = \"weight\", nodeBipolar = TRUE, linkBipolar = TRUE)",
+      "files": ["net_numeric_nodes", "net_numeric_links"]
+    },
+    "net_lists": {
+      "call": "netCoin(nodes, links, color = list(group = c(g1 = \"red\", g2 = \"blue\", g3 = \"green\")), shape = list(kind = c(x = \"Circle\", y = \"star\")), lcolor = list(type = c(p = \"orange\", q = \"grey\", r = \"black\")))",
+      "files": ["net_lists_nodes", "net_lists_links"]
+    },
+    "net_vectors": {
+      "call": "netCoin(nodes, links, color = <10 colours>, shape = 1:10, lcolor = 1:14)",
+      "files": ["net_vectors_nodes", "net_vectors_links"]
+    },
+    "net_categories": {
+      "call": "netCoin(nodes, links, color = factor(group), shape = factor(kind), lcolor = factor(type))",
+      "files": ["net_categories_nodes", "net_categories_links"]
+    },
+    "net_filters": {
+      "call": "netCoin(nodes, links, nodeFilter = \"size > 2\", linkFilter = \"weight > 0.3\")",
+      "files": ["net_filters_nodes", "net_filters_links"]
+    },
+    "net_degree": {
+      "call": "netCoin(nodes, links, degreeFilter = c(2, 4))",
+      "files": ["net_degree_nodes", "net_degree_links"]
+    },
+    "net_degree_one": {
+      "call": "netCoin(nodes, links, degreeFilter = 3, nodeFilter = \"kind == 'x'\")",
+      "files": ["net_degree_one_nodes", "net_degree_one_links"]
+    },
+    "net_options": {
+      "call": "netCoin(nodes, links, controls = c(1,2,3), showLegend = FALSE, mode = \"network\", repulsion = 40, distance = 15, zoom = 2, limits = c(0,0,10,10), background = \"#ABC\", defaultColor = \"firebrick\", helpOn = TRUE, help = \"Help text\", showCoordinates = TRUE, showArrows = TRUE, showAxes = TRUE, axesLabels = c(\"X\",\"Y\"), nodesLabel = \"N\", linksLabel = \"L\", sort = \"size\", decreasing = TRUE, frequencies = TRUE, statistics = TRUE, roundedItems = TRUE, cex = 1.3, groupText = TRUE, group = \"group\")",
+      "files": ["net_options_nodes", "net_options_links"]
+    },
+    "net_controls": {
+      "call": "netCoin(nodes, links, controls = c(1,5,8), showLegend = FALSE)",
+      "files": ["net_controls_nodes", "net_controls_links"]
+    },
+    "net_controls0": {
+      "call": "netCoin(nodes, links, controls = 0)",
+      "files": ["net_controls0_nodes", "net_controls0_links"]
+    },
+    "net_spanish": {
+      "call": "netCoin(nodes, links, name = \"name\", language = \"es\")",
+      "files": ["net_spanish_nodes", "net_spanish_links"]
+    },
+    "net_tree": {
+      "call": "netCoin(nodes, links, tree = tree)",
+      "files": ["net_tree_nodes", "net_tree_links"]
+    },
+    "net_linksonly": {
+      "call": "netCoin(links = links)",
+      "files": ["net_linksonly_nodes", "net_linksonly_links"]
+    },
+    "net_nolinks": {
+      "call": "netCoin(nodes, size = \"size\", name = \"label\")",
+      "files": ["net_nolinks_nodes", "net_nolinks_links"]
+    },
+    "net_images": {
+      "call": "netCoin(nodes, links, image = c(\"label\",\"text\"), imageNames = c(\"group\",\"kind\"))",
+      "files": ["net_images_nodes", "net_images_links"]
+    },
+    "net_sparse": {
+      "call": "netCoin(nodes[c(1,2,4)], links, name = \"name\")",
+      "files": ["net_sparse_nodes", "net_sparse_links"]
+    },
+    "net_layout_matrix": {
+      "call": "netCoin(nodes, links, layout = cbind(x=0:9, y=rep(0:1,5)))",
+      "files": ["net_layout_matrix_nodes", "net_layout_matrix_links"]
+    },
+    "net_layout_nocols": {
+      "call": "netCoin(nodes, links, layout = unname(cbind(...)))",
+      "files": ["net_layout_nocols_nodes", "net_layout_nocols_links"]
+    },
+    "net_layout_planes": {
+      "call": "netCoin(nodes, links, layout = list(first = cbind(x,y), second = cbind(u,v)))",
+      "files": ["net_layout_planes_nodes", "net_layout_planes_links"]
+    },
+    "net_layout_circle": {
+      "call": "netCoin(nodes, links, layout = \"circle\")",
+      "files": ["net_layout_circle_nodes", "net_layout_circle_links"]
+    },
+    "net_layout_grid": {
+      "call": "netCoin(nodes, links, layout = \"grid\")",
+      "files": ["net_layout_grid_nodes", "net_layout_grid_links"]
+    },
+    "net_layout_star": {
+      "call": "netCoin(nodes, links, layout = \"star\")",
+      "files": ["net_layout_star_nodes", "net_layout_star_links"]
+    },
+    "net_layout_reingold_tilford": {
+      "call": "netCoin(nodes, links, layout = \"reingold_tilford\")",
+      "files": ["net_layout_reingold_tilford_nodes", "net_layout_reingold_tilford_links"]
+    },
+    "net_layout_kamada_kawai": {
+      "call": "netCoin(nodes, links, layout = \"kamada_kawai\")",
+      "files": ["net_layout_kamada_kawai_nodes", "net_layout_kamada_kawai_links"]
+    },
+    "net_layout_sugiyama": {
+      "call": "netCoin(nodes, links, layout = \"sugiyama\")",
+      "files": ["net_layout_sugiyama_nodes", "net_layout_sugiyama_links"]
+    },
+    "net_layout_two_names": {
+      "call": "netCoin(nodes, links, layout = c(\"circle\", \"grid\"))",
+      "files": ["net_layout_two_names_nodes", "net_layout_two_names_links"]
+    },
+    "net_layout_mixed": {
+      "call": "netCoin(nodes, links, layout = list(mine = cbind(x,y), \"circle\"))",
+      "files": ["net_layout_mixed_nodes", "net_layout_mixed_links"]
+    },
+    "net_community_walktrap": {
+      "call": "netCoin(nodes, links, community = \"walktrap\")",
+      "files": ["net_community_walktrap_nodes", "net_community_walktrap_links"]
+    },
+    "net_community_fast_greedy": {
+      "call": "netCoin(nodes, links, community = \"fast_greedy\")",
+      "files": ["net_community_fast_greedy_nodes", "net_community_fast_greedy_links"]
+    },
+    "net_community_leading_eigen": {
+      "call": "netCoin(nodes, links, community = \"leading_eigen\")",
+      "files": ["net_community_leading_eigen_nodes", "net_community_leading_eigen_links"]
+    },
+    "net_community_edge_betweenness": {
+      "call": "netCoin(nodes, links, community = \"edge_betweenness\")",
+      "files": ["net_community_edge_betweenness_nodes", "net_community_edge_betweenness_links"]
+    },
+    "net_community_color": {
+      "call": "netCoin(nodes, links, community = \"walktrap\", color = \"community\")",
+      "files": ["net_community_color_nodes", "net_community_color_links"]
+    },
+    "net_centrality": {
+      "call": "netCoin(nodes, links, centrality = c(\"wdegree\",\"closeness\",\"betweenness\",\"eigen\"))",
+      "files": ["net_centrality_nodes", "net_centrality_links"]
+    },
+    "igraph_to": {
+      "call": "toIgraph(netCoin(nodes, links, label, size, color, lwidth, lcolor, showArrows = TRUE))",
+      "files": ["igraph_vertices", "igraph_edges"]
+    },
+    "centrality_all": {
+      "call": "calCentr(netCoin(nodes, links), \"all\")",
+      "files": "centrality_all"
+    },
+    "centrality_directed": {
+      "call": "calCentr(netCoin(nodes, links, showArrows = TRUE), c(\"degree\",\"closeness\"))",
+      "files": "centrality_directed"
+    },
+    "pajek": {
+      "call": "savePajek(...)",
+      "files": ["pajek_basic", "pajek_project"]
     }
   }
 }

@@ -39,7 +39,10 @@ def test_every_script_of_a_network_exists(language, tmp_path, monkeypatch):
     written = {}
     monkeypatch.setattr(network, "createHTML",
                         lambda directory, styles, scripts, data, title=None: written.update(styles=styles, scripts=scripts))
-    net = {"options": {"language": language, "statistics": True}, "nodes": {}, "links": {}}
+    import pandas as pd
+    from netcoin import netCoin
+    net = netCoin._from_parts(pd.DataFrame({"name": ["a"]}), None,
+                              {"nodeName": "name", "language": language, "statistics": True})
     network.netCreate(net, str(tmp_path / "x"))
     assert written["scripts"][-2:] == [f"{language}.js", "network.js"]
     for name in written["styles"] + written["scripts"]:

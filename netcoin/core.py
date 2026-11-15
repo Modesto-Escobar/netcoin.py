@@ -1,592 +1,833 @@
-import os, warnings, webbrowser
+"""The ``netCoin`` network object (port of netCoin's ``netCoin`` and rD3plot's ``network_rd3``)."""
+from __future__ import annotations
+
+import inspect
+import math
+import os
+import warnings
+import webbrowser
+from copy import deepcopy
+from tempfile import mkdtemp
+from types import SimpleNamespace
+from typing import Sequence
+
 import numpy as np
 import pandas as pd
+
+from .dichotomize import _as_character
 from .network import netCreate
-from .utils import isnumeric, transpose, getByLanguage, nameList, frequencyList, languages
-from tempfile import mkdtemp
-from statistics import mean, median
-from copy import deepcopy
+from .utils import frequencyList, getByLanguage, nameList
+from .webgraph import (capitalize, check_cex, check_default_color, check_item_value, check_language,
+                       col2hex, column_option, get_shapes, is_color, is_shape)
 
-def _table_to_dict(table):
-  """A DataFrame as a dict of lists of plain python values (NaN becomes None)."""
-  if not isinstance(table, pd.DataFrame):
-    return table
-  out = {}
-  for column in table.columns:
-    values = table[column].tolist()
-    out[str(column)] = [None if (isinstance(v, float) and v != v) or v is pd.NA or v is pd.NaT else v
-                        for v in values]
-  return out
+# camelCase names of earlier versions (and of the R package) -> snake_case
+_LEGACY = {
+    "groupText": "group_text", "labelSize": "label_size", "imageNames": "image_names",
+    "nodeBipolar": "node_bipolar", "nodeScaleLimits": "node_scale_limits",
+    "nodeFilter": "node_filter", "degreeFilter": "degree_filter", "linkBipolar": "link_bipolar",
+    "linkScaleLimits": "link_scale_limits", "linkFilter": "link_filter",
+    "showCoordinates": "show_coordinates", "showArrows": "show_arrows", "showLegend": "show_legend",
+    "showAxes": "show_axes", "axesLabels": "axes_labels", "nodesLabel": "nodes_label",
+    "linksLabel": "links_label", "helpOn": "help_on", "roundedItems": "rounded_items",
+    "defaultColor": "default_color", "nodeAttrNames": "node_attr_names",
+    "linkAttrNames": "link_attr_names", "dir": "directory",
+}
 
 
-def _matrix_to_list(matrix):
-  """A layout given as array or DataFrame, as a list of rows."""
-  if isinstance(matrix, pd.DataFrame):
-    matrix = matrix.to_numpy()
-  if isinstance(matrix, np.ndarray):
-    return matrix.tolist()
-  return matrix
+def _normalize_legacy(kwargs: dict, strict: bool = True) -> dict:
+    """Turn camelCase keywords into the snake_case ones, with a deprecation warning.
+
+    With ``strict`` (the constructor) any other keyword is an error; without it
+    (``add``) the other keywords are kept as they are.
+    """
+    out: dict = {}
+    for key, value in kwargs.items():
+        if key in _LEGACY:
+            new = _LEGACY[key]
+            warnings.warn(f"'{key}' is deprecated, use '{new}'", DeprecationWarning, stacklevel=4)
+        elif key in ("orderA", "orderD"):
+            warnings.warn(f"'{key}' is deprecated, use 'sort' (and 'decreasing')",
+                          DeprecationWarning, stacklevel=4)
+            out["sort"] = value
+            out["decreasing"] = key == "orderD"
+            continue
+        elif strict:
+            raise TypeError(f"netCoin() got an unexpected keyword argument '{key}'")
+        else:
+            out[key] = value
+            continue
+        if new in out:
+            raise TypeError(f"netCoin() got multiple values for '{new}'")
+        out[new] = value
+    return out
+
+
+def _is_default(value, default) -> bool:
+    try:
+        return bool(value == default) if not isinstance(value, (list, np.ndarray, pd.DataFrame))             else False
+    except (TypeError, ValueError):
+        return False
+
+
+def _as_frame(table, what: str):
+    if table is None:
+        return None
+    frame = table.copy() if isinstance(table, pd.DataFrame) else pd.DataFrame(table)
+    frame.columns = [str(c) for c in frame.columns]
+    frame = frame.reset_index(drop=True)
+    for col in frame.columns:
+        if isinstance(frame[col].dtype, pd.CategoricalDtype):
+            continue
+    if frame.empty:
+        warnings.warn(f"The {what} data frame is empty")
+        return None
+    return frame
+
+
+def _make_unique(values: list[str]) -> list[str]:
+    """R's ``make.unique``: the repeated names get ``.1``, ``.2``..."""
+    seen: dict[str, int] = {}
+    taken = set(values)
+    out = []
+    for v in values:
+        if v not in seen:
+            seen[v] = 0
+            out.append(v)
+        else:
+            while True:
+                seen[v] += 1
+                candidate = f"{v}.{seen[v]}"
+                if candidate not in taken:
+                    break
+            taken.add(candidate)
+            out.append(candidate)
+    return out
+
+
+def name_by_language(name, language, nodes) -> str:
+    """The column of names: the given one, or ``name``/``nombre``/``nom`` by language."""
+    if name is None:
+        name = getByLanguage(nameList, language)
+    if nodes is not None:
+        if name not in nodes.columns:
+            warnings.warn(f"name: '{name}' column missing in nodes data frame")
+        elif nodes[name].duplicated().any():
+            warnings.warn(f"name: '{name}' column values must be unique")
+    return name
+
+
+def set_attr_by_value_key(label: str, item, items: pd.DataFrame | None):
+    """A colour (or shape) given as ``{column: {value: colour}}``: one colour per row.
+
+    Port of ``setAttrByValueKey``: each key must be a text column of ``items`` and its
+    value a dict that maps the values of that column to colours; the result is a
+    DataFrame with a column per key. Anything else is returned as it is.
+    """
+    if not isinstance(item, dict):
+        return item
+    checked = {}
+    for key, mapping in item.items():
+        if items is None or key not in items.columns or not (
+                items[key].dtype == object or isinstance(items[key].dtype, pd.CategoricalDtype)):
+            warnings.warn(f"{label}: the names in the list must match character columns of the items, "
+                          f"but '{key}' doesn't")
+        elif not isinstance(mapping, dict):
+            warnings.warn(f"{label}: each item in the list must be a named character vector "
+                          f"describing value-{label}, but '{key}' doesn't")
+        else:
+            checked[key] = [mapping.get(v) for v in items[key].astype(str)]
+    return pd.DataFrame(checked) if checked else None
 
 
 class netCoin:
+    """An interactive network: nodes, links and the options of how to draw them.
 
-  def __init__(self,
-      nodes = None,
-      links = None,
-      nodeAttrNames = None,
-      linkAttrNames = None,
-      tree = None,
-      name = None,
-      label = None,
-      labelSize = None,
-      size = None,
-      color = None,
-      shape = None,
-      legend = None,
-      ntext = None,
-      info = None,
-      orderA = None,
-      orderD = None,
-      group = None,
-      source = "Source",
-      target = "Target",
-      lwidth = None,
-      lweight = None,
-      lcolor = None,
-      ltext = None,
-      nodeFilter = None,
-      linkFilter = None,
-      degreeFilter = None,
-      nodeBipolar = False,
-      linkBipolar = False,
-      defaultColor = "#1f77b4",
-      repulsion = 25,
-      distance = 10,
-      zoom = 1,
-      scenarios = None,
-      main = None,
-      note = None,
-      help = None,
-      helpOn = False,
-      cex = 1,
-      background = None,
-      layout = None,
-      limits = None,
-      controls = [1,2,3,4,5],
-      mode = ["network","heatmap"],
-      showCoordinates = False,
-      showArrows = False,
-      showLegend = True,
-      showAxes = False,
-      axesLabels = None,
-      language = 'en',
-      image = None,
-      imageNames = None,
-      directory = None):
-    '''Create netCoin object
+    Port of ``netCoin`` (R). The tables are DataFrames: ``nodes`` and ``links`` (``None``
+    when there are none), ``tree`` (``Source``, ``Target``) and ``options`` is the
+    dict that the web page reads. Draw it with :meth:`plot` or ``directory=``.
 
-    @keyword nodes: the attributes of the nodes as a dictionary.
-    @keyword links: the attributes of the links as a dictionary.
-    @keyword nodeAttrNames: list of node attributes.
-    @keyword linkAttrNames: list of link attributes.
-    @keyword tree: list where every list item is a pair of names describing
-      relationships between nodes.
-    @keyword name: name of the node attribute with names. By default, if
-      I{language} is 'en', I{name} is 'name'.
-    @keyword label: name of the node attribute with labels.
-    @keyword labelSize: name of the node attribute with label sizes.
-    @keyword size: name of the node attribute with sizes.
-    @keyword color: name of the node attribute with colors.
-    @keyword shape: name of the node attribute with shapes.
-    @keyword legend: name of the node attribute to represent as a legend.
-    @keyword ntext: name of the node attribute with html text.
-    @keyword info: name of the node attribute with information to display in
-      a panel.
-    @keyword orderA: name of the node attribute with ascending order.
-    @keyword orderD: name of the node attribute with descending order.
-    @keyword group: name of the node attribute with groups.
-    @keyword lwidth: name of the link attribute with line widths.
-    @keyword lweight: name of the link attribute with weights.
-    @keyword lcolor: name of the link attribute with line colors.
-    @keyword ltext: name of the link attribute with texts.
-    @keyword nodeFilter: boolean list to filter nodes.
-    @keyword linkFilter: boolean list to filter links.
-    @keyword degreeFilter: numeric value to filter the resulting network by
-      degree.
-    @keyword nodeBipolar: logical value that polarizes negative and positive
-      node values in the graphical representation. C{False} by default.
-    @keyword linkBipolar: logical value that polarizes negative and positive
-      link values in the graphical representation. C{False} by default.
-    @keyword defaultColor: string giving a valid html color.
-    @keyword repulsion: percentage for repulsion between nodes.
-    @keyword distance: percentage for distance of links.
-    @keyword zoom: value between 0.1 and 10 to start displaying zoom.
-    @keyword scenarios: a note showing number of scenarios.
-    @keyword main: upper title of the graph.
-    @keyword note: lower title of the graph.
-    @keyword help: help text of the graph.
-    @keyword helpOn: should the help be shown at the beginning?
-    @keyword background: background color or image of the graph.
-    @keyword layout: a matrix with two columns or an algorithm to elaborate the
-      coordinates: 'auto', 'bipartite', 'circle', 'drl',
-      'fruchterman_reingold', 'grid', 'kamada_kawai', 'lgl', 'mds', 'random',
-      'reingold_tilford', 'star', 'sphere', 'sugiyama'.
-    @keyword limits: list indicating size references to display layout, must be
-      a numeric list of length 4: x1, y1, x2, y2.
-    @keyword controls: a numeric list indicating which controls will be shown.
-      1 = sidebar, 2 = selection buttons, 3 = tables, 4 = sliders & buttons,
-      5 = export buttons. C{None} hide all controls, negative values deny each
-      control and 0 deny all.
-    @keyword mode: list of strings indicating the graph mode allowed: network,
-      heatmap or both (both by default).
-    @keyword showCoordinates: logical value C{True} if the coordinates are to
-      be shown in tables. C{False} by default.
-    @keyword showArrows: logical value C{True} if directional arrows are to be
-      shown. C{False} by default.
-    @keyword showLegend: logical value C{True} if the legend is to be shown.
-      C{True} by default.
-    @keyword showAxes: logical value C{True} if the axes are to be shown.
-      C{False} by default.
-    @keyword axesLabels: list of axes names.
-    @keyword image: name of the node attribute with image files.
-    @keyword imageNames: name of the node attribute with names for image
-      files.
-    @keyword directory: string representing the directory where the web files
-      will be saved.
-    '''
+    Parameters
+    ----------
+    nodes : DataFrame or dict, optional
+        One row per node.
+    links : DataFrame or dict, optional
+        One row per link, with ``Source`` and ``Target`` (names of the nodes; if they are
+        numbers, 1-based positions in ``nodes``). If there are no nodes they are taken
+        from the links.
+    tree : DataFrame or list of pairs, optional
+        Parent -> child relations among the nodes.
+    community : str, optional
+        Detect communities with igraph (``"walktrap"``, ``"louvain"``, ``"fast_greedy"``,
+        ``"edge_betweenness"``, ``"label_prop"``, ``"leading_eigen"``, ``"optimal"`` or
+        ``"spinglass"``; two letters are enough) and put them in the node column
+        ``community``.
+    layout : str, matrix, DataFrame, list or dict, optional
+        Coordinates: a name (``"fruchterman_reingold"``, ``"kamada_kawai"``, ``"circle"``,
+        ``"grid"``, ``"star"``, ``"reingold_tilford"``, ``"sugiyama"``, ``"mds"``,
+        ``"drl"``, ``"lgl"``, ``"davidson_harel"``, ``"random"``, ``"force_atlas2"``;
+        two letters are enough), a matrix with two columns, or several of them in a dict
+        (planes the page lets you switch between).
+    name, label, group, group_text, label_size, size, color, shape, border, legend,
+    sort, decreasing, ntext, info
+        Node columns used for the name, label, groups, label size, size (or a number for
+        all), colour, shape (``"Circle"``, ``"Square"``, ``"Diamond"``, ``"Triangle"``,
+        ``"Cross"``, ``"Star"``, ``"Wye"``), border, legend, order, text of the tooltip
+        and the info panel. ``color`` and ``shape`` can also be one value, one per
+        node, or a dict ``{column: {value: colour}}``.
+    image, image_names : list of str, optional
+        Node columns with image files (and the names to show).
+    centrality : list of str, optional
+        Add the centralities ``"wdegree"``, ``"closeness"``, ``"betweenness"``,
+        ``"eigen"`` as node columns (needs igraph).
+    node_bipolar, link_bipolar : bool
+        Treat negative and positive values as two poles of the colour scale.
+    node_scale_limits, link_scale_limits : list of 2 or 3 numbers
+        Limits of the numeric colour scale of ``color`` / ``lcolor``.
+    node_filter, link_filter : str, callable, or sequence of bool
+        Which nodes / links are shown. A text is a pandas expression over the columns
+        (``"size > 10 and group == 'a'"``); a callable gets the table and returns the
+        booleans.
+    degree_filter : number or (min, max)
+        Show only the nodes whose degree is in the range.
+    lwidth, lweight, lcolor, ltext, intensity
+        Link columns for the width, the weight (for layouts), the colour (also one
+        value or one per link), the text and the intensity of the colour.
+    repulsion, distance, zoom : number
+        Behaviour of the force layout (0-100, 0-100, 0.1-10).
+    fixed, limits, show_coordinates, show_arrows, show_axes, axes_labels
+        Fix the positions, give the area (x1, y1, x2, y2), show the coordinates in the
+        tables, draw arrows and axes (with their labels).
+    main, note, help, help_on, scenarios, cex, background, default_color, language
+        Titles, help text (``help_on`` shows it at the start), the number of scenarios,
+        font size, background colour or image file, colour of the nodes, and
+        ``"en"``/``"es"``/``"ca"``.
+    show_legend, frequencies, statistics, nodes_label, links_label
+        Show the legend, the frequency column, the statistics panel and the labels of the
+        two tables.
+    mode : list of str
+        ``"network"``, ``"heatmap"`` or both.
+    controls : list of int
+        Which controls are shown: 1 sidebar, 2 selection buttons, 3 tables, 4 sliders and
+        buttons, 5 export buttons, 6, 7, 8 legend (0 hides all, negatives remove).
+    rounded_items : bool
+        Rounded icons in the tables.
+    directory : str, optional
+        Write the page there.
 
-    # the arguments, to rebuild the object (see add())
-    self._args = {k: deepcopy(v) for k, v in locals().items()
-                  if k not in ('self', 'directory', '__class__')}
-
-    nodes = _table_to_dict(nodes)
-    links = _table_to_dict(links)
-    layout = _matrix_to_list(layout)
-
-    if not name:
-      name = getByLanguage(nameList,language)
-
-    self.options = {'nodeName':name}
-    
-    def str2float(x):
-      if type(x) is str:
-        try:
-          x = float(x)
-          if(x.is_integer()):
-            x = int(x)
-        except ValueError:
-          pass
-      return x
-
-    def checkItem(x,limit):
-      x = list(map(str2float,x))
-      if len(x) > limit:
-        x = x[:limit]
-      if len(x) < limit:
-        if isnumeric(x):
-          fill = 0
-        else:
-          fill = ''
-        while len(x) < limit:
-          x.append(fill)
-      return x
-
-    self.nodes = {}
-    if nodes:
-      if name not in nodes.keys():
-        raise Exception('"' + name + '" must be in nodes')
-      self.nodes[name] = list(map(str,nodes[name]))
-      nnodes = len(nodes[name])
-      for k in nodes.keys():
-        if k!=name:
-          self.nodes[k] = checkItem(nodes[k],nnodes)
-
-    self.links = {}
-    if links:
-      if source not in links.keys():
-        raise Exception('"' + source + '" must be in links')
-      if target not in links.keys():
-        raise Exception('"' + target + '" must be in links')
-      self.options['linkSource'] = source
-      self.options['linkTarget'] = target
-      nlinks = len(links[source])
-      if len(links[target]) != nlinks:
-        raise Exception('"' + source + '" and "' + target + '" must have the same length')
-      for k in links.keys():
-        if k in [source,target]:
-          if isnumeric(links[k]):
-            if not nodes:
-              self.links[k] = list(map(lambda x: 'node'+str(int(x)),links[k]))
-            else:
-              self.links[k] = list(map(lambda x: self.nodes[name][int(x)-1],links[k]))
-          else:
-            self.links[k] = list(map(str,links[k]))
-        else:
-          self.links[k] = checkItem(links[k],nlinks)
-      if not nodes:  # the nodes are the names found in the links, in order of appearance
-        self.nodes[name] = list(dict.fromkeys(self.links[source] + self.links[target]))
-
-      # as in R, only the links between two different nodes of the table are kept
-      known = set(self.nodes[name])
-      keep = [i for i, (a, b) in enumerate(zip(self.links[source], self.links[target]))
-              if a in known and b in known and a != b]
-      if len(keep) < nlinks:
-        for k in self.links:
-          self.links[k] = [self.links[k][i] for i in keep]
-      if not keep:
-        warnings.warn("links: no row (source and target) matches the '" + name + "' column of the nodes")
-        self.links = {}
-        del self.options['linkSource'], self.options['linkTarget']
-
-    if tree:
-      tree = checkTree(tree,self.nodes[name])
-      self.tree = tree
-
-    # graph options
-    self.options["cex"] = 1
-    if isnumeric(cex):
-      self.options["cex"] = cex
-    else:
-      print("cex: must be numeric")
-    if isnumeric(repulsion) and repulsion>=0 and repulsion<=100:
-      self.options["repulsion"] = repulsion
-    else:
-      print("repulsion: must be numeric between 0 and 100")
-    if isnumeric(distance) and distance>=0 and distance<=100:
-      self.options["distance"] = distance
-    else:
-      print("distance: must be numeric between 0 and 100")
-    if isnumeric(zoom) and zoom>=0.1 and zoom<=10:
-      self.options["zoom"] = zoom
-    else:
-      print("zoom: must be numeric between 0.1 and 10")
-    if scenarios:
-      if isnumeric(scenarios):
-        self.options["scenarios"] = int(scenarios) if float(scenarios).is_integer() else scenarios
-      else:
-        print("scenarios: must be numeric")
-    if limits:
-      if type(limits) is not list or len(limits) != 4:
-        print("limits: must be a numeric list of length 4")
-      else:
-        self.options["limits"] = list(map(lambda x: float(x), limits))
-
-    if main:
-      self.options["main"] = main
-    if note:
-      self.options["note"] = note
-    if help:
-      self.options["help"] = help
-    if background:
-      self.options["background"] = background
-    if language:
-      self.options["language"] = language
-
-    if nodeBipolar:
-      self.options["nodeBipolar"] = True
-    if linkBipolar:
-      self.options["linkBipolar"] = True
-    if helpOn:
-      self.options["helpOn"] = True
-    if defaultColor:
-      self.options["defaultColor"] = defaultColor
-    if controls:
-      if type(controls) is not list:
-        self.options["controls"] = int(controls)
-      else:
-        self.options["controls"] = [int(x) for x in controls]
-    if mode:
-      getFirst = lambda x: x[0:1].lower()
-      if type(mode) is list:
-        self.options["mode"] = list(map(getFirst, mode))
-      else:
-        self.options["mode"] = getFirst(mode)
-    if axesLabels:
-      if type(axesLabels) is not list:
-        self.options["axesLabels"] = [str(axesLabels)]
-      else:
-        self.options["axesLabels"] = list(map(lambda x: str(x), axesLabels))
-
-    if showCoordinates:
-      self.options["showCoordinates"] = True
-    if showArrows:
-      self.options["showArrows"] = True
-    if showLegend:
-      self.options["showLegend"] = True
-    if showAxes:
-      self.options["showAxes"] = True
-
-    # node options
-    if label is None:
-        self.options["nodeLabel"] = name
-    elif label != "":
-        self.options["nodeLabel"] = label
-    if labelSize:
-      self.options["nodeLabelSize"] = labelSize
-    if group:
-      self.options["nodeGroup"] = group
-    if size:
-      self.options["nodeSize"] = size
-    if color:
-      self.options["nodeColor"] = color
-    if shape:
-      self.options["nodeShape"] = shape
-    if legend:
-      self.options["nodeLegend"] = legend
-    if ntext:
-      self.options["nodeText"] = ntext
-    if info:
-      self.options["nodeInfo"] = info
-    if orderA:
-      self.options["nodeOrderA"] = orderA
-    if orderD:
-      self.options["nodeOrderD"] = orderD
-    if image:
-      self.options["imageItems"] = image
-      if imageNames:
-        self.options["imageNames"] = imageNames
-
-    # link options
-    if lwidth:
-      self.options ["linkWidth"] = lwidth
-    if lweight:
-      self.options["linkWeight"] = lweight
-    if lcolor:
-      self.options["linkColor"] = lcolor
-    if ltext:
-      self.options["linkText"] = ltext
-
-    # filters
-    if nodeFilter and type(nodeFilter) is list and len(nodeFilter)==self.ncount():
-      self.nodes['hidden'] = list(map(lambda x: not x, nodeFilter))
-
-    if linkFilter and type(linkFilter) is list and len(linkFilter)==self.lcount():
-      self.links['hidden'] = list(map(lambda x: not x, linkFilter))
-
-    #if degreeFilter:
-    #  self.options["degreeFilter"] = degreeFilter
-
-    # layout
-    if layout:
-      if type(layout) is list:
-        layout = transpose(layout)
-        self.nodes["fx"] = layout[0]
-        self.nodes["fy"] = layout[1]
-      else:
-        print("layout must be a matrix")
-
-    # attribute names
-    if nodeAttrNames:
-      if name not in nodeAttrNames:
-        nodeAttrNames = [name] + nodeAttrNames
-      self.nodeAttrNames = nodeAttrNames
-
-    if linkAttrNames:
-      if (source not in linkAttrNames) or (target not in linkAttrNames):
-        linkAttrNames = [source, target] + [x for x in linkAttrNames if x not in [source, target]]
-      self.linkAttrNames = linkAttrNames
-
-    if directory:
-      netCreate(self,directory)
-
-  def getNodeAttr(self):
-    nodekeys = list(self.nodes.keys())
-    if hasattr(self,'nodeAttrNames'):
-      return [x for x in self.nodeAttrNames if x in nodekeys] + [x for x in nodekeys if x not in self.nodeAttrNames]
-    else:
-      return nodekeys
-
-  def getLinkAttr(self):
-    linkkeys = list(self.links.keys())
-    if hasattr(self,'linkAttrNames'):
-      return [x for x in self.linkAttrNames if x in linkkeys] + [x for x in linkkeys if x not in self.linkAttrNames]
-    else:
-      return linkkeys
-
-  def nodes_frame(self):
-    """The nodes as a DataFrame, columns in display order."""
-    return pd.DataFrame({k: self.nodes[k] for k in self.getNodeAttr()})
-
-  def links_frame(self):
-    """The links as a DataFrame, columns in display order (empty if there are none)."""
-    return pd.DataFrame({k: self.links[k] for k in self.getLinkAttr()})
-
-  def add(self, **kwargs):
-    """A new netCoin object with some arguments changed or added.
-
-    Port of ``addNetCoin``: every argument of the constructor can be given
-    (``nodes``, ``links``, ``color``, ``main``...) and replaces the one the
-    object was built with; the rest is kept. The original is not modified.
+    The camelCase names of earlier versions (``nodeFilter``, ``showArrows``,
+    ``defaultColor``...) still work but are deprecated; ``orderA``/``orderD`` became
+    ``sort`` and ``decreasing``.
     """
-    unknown = set(kwargs) - set(self._args)
-    if unknown:
-      raise TypeError("unknown netCoin arguments: " + ", ".join(sorted(unknown)))
-    arguments = deepcopy(self._args)
-    arguments.update(kwargs)
-    return netCoin(**arguments)
 
-  def _create(self, directory, title=None):
-    """Write the web page of this graph (used by multigraphCreate)."""
-    netCreate(self, directory, title)
+    def __init__(
+        self,
+        nodes=None,
+        links=None,
+        tree=None,
+        community: str | None = None,
+        layout=None,
+        name: str | None = None,
+        label: str | None = None,
+        group: str | None = None,
+        group_text: bool = False,
+        label_size: str | None = None,
+        size=None,
+        color=None,
+        shape=None,
+        border: str | None = None,
+        legend: str | None = None,
+        sort: str | None = None,
+        decreasing: bool = False,
+        ntext: str | None = None,
+        info: str | None = None,
+        image: Sequence[str] | str | None = None,
+        image_names: Sequence[str] | str | None = None,
+        centrality=None,
+        node_bipolar: bool = False,
+        node_scale_limits: Sequence[float] | None = None,
+        node_filter=None,
+        degree_filter=None,
+        lwidth: str | None = None,
+        lweight: str | None = None,
+        lcolor=None,
+        ltext: str | None = None,
+        intensity: str | None = None,
+        link_bipolar: bool = False,
+        link_scale_limits: Sequence[float] | None = None,
+        link_filter=None,
+        repulsion: float = 25,
+        distance: float = 10,
+        zoom: float = 1,
+        fixed: bool | None = None,
+        limits: Sequence[float] | None = None,
+        main: str | None = None,
+        note: str | None = None,
+        show_coordinates: bool = False,
+        show_arrows: bool = False,
+        show_legend: bool = True,
+        frequencies: bool = False,
+        statistics: bool = False,
+        show_axes: bool = False,
+        axes_labels: Sequence[str] | None = None,
+        nodes_label: str | None = None,
+        links_label: str | None = None,
+        scenarios: float | None = None,
+        help: str | None = None,
+        help_on: bool = False,
+        mode: Sequence[str] | str = ("network", "heatmap"),
+        rounded_items: bool = False,
+        controls: Sequence[int] | int | None = tuple(range(1, 9)),
+        cex: float = 1,
+        background: str | None = None,
+        default_color: str = "#1f77b4",
+        language: str = "en",
+        directory: str | None = None,
+        *,
+        source: str = "Source",
+        target: str = "Target",
+        node_attr_names: Sequence[str] | None = None,
+        link_attr_names: Sequence[str] | None = None,
+        **legacy,
+    ):
+        args = {k: v for k, v in locals().items() if k not in ("self", "legacy", "__class__")}
+        defaults = inspect.signature(netCoin.__init__).parameters
+        for key, value in _normalize_legacy(legacy).items():
+            if key in args and not _is_default(args[key], defaults[key].default):
+                raise TypeError(f"netCoin() got multiple values for '{key}'")
+            args[key] = value
+        self._args = {k: deepcopy(v) for k, v in args.items() if k != "directory"}
+        self._build(SimpleNamespace(**args))
+        if args["directory"]:
+            self._create(args["directory"])
 
-  def ncount(self):
-    return len(self.nodes[self.options['nodeName']])
+    # -------------------------------------------------------------- build ----
+    def _build(self, a: SimpleNamespace):
+        if a.links is None and a.nodes is None:
+            raise ValueError("You must explicit a nodes or links data frame.")
+        if isinstance(a.nodes, netCoin):
+            raise TypeError("Using netCoin to change netCoin object attributes is deprecated. "
+                            "Use the add() method instead.")
 
-  def lcount(self):
-    if 'linkSource' in self.options:
-      return len(self.links[self.options['linkSource']])
-    else:
-      return 0
+        nodes = _as_frame(a.nodes, "nodes")
+        links = _as_frame(a.links, "links")
+        if nodes is None and links is None:
+            raise ValueError("You must explicit a nodes or links data frame.")
+        name = name_by_language(a.name, a.language, nodes)
 
-  def getNet(self):
-    '''Extract net from netCoin object'''
-    net = {'options': deepcopy(self.options)}
-    if hasattr(self,'tree'):
-      net['tree'] = deepcopy(self.tree)
-    net['nodeAttrNames'] = self.getNodeAttr()
-    net['linkAttrNames'] = self.getLinkAttr()
+        color = set_attr_by_value_key("color", a.color, nodes)
+        shape = set_attr_by_value_key("shape", a.shape, nodes)
+        lcolor = set_attr_by_value_key("lcolor", a.lcolor, links)
 
-    net['nodes'] = deepcopy(self.nodes)
-    net['links'] = deepcopy(self.links)
+        options: dict = {}
 
-    def getIndex(x):
-      return net['nodes'][net['options']['nodeName']].index(x)
+        # links and nodes
+        source, target = a.source, a.target
+        if links is not None:
+            if source == "source":
+                links = links.rename(columns={"source": "Source"})
+                source = "Source"
+            if target == "target":
+                links = links.rename(columns={"target": "Target"})
+                target = "Target"
+            for column in (source, target):
+                if column not in links.columns:
+                    raise ValueError(f'"{column}" must be in links')
+            options["linkSource"], options["linkTarget"] = source, target
+            if nodes is not None and name in nodes.columns:
+                names_for_index = _as_character(nodes[name])
+            else:
+                names_for_index = None
+            for column in (source, target):
+                if pd.api.types.is_numeric_dtype(links[column]) and names_for_index is not None:
+                    links[column] = [names_for_index[int(v) - 1] if 0 < int(v) <= len(names_for_index)
+                                     else str(v) for v in links[column]]
+                else:
+                    links[column] = _as_character(links[column])
+            if nodes is None:
+                union = list(dict.fromkeys(list(links[source]) + list(links[target])))
+                nodes = pd.DataFrame({name: union})
 
-    if self.lcount():
-      net['links'][net['options']['linkSource']] = list(map(getIndex,net['links'][net['options']['linkSource']]))
-      net['links'][net['options']['linkTarget']] = list(map(getIndex,net['links'][net['options']['linkTarget']]))
+        if name not in nodes.columns:
+            raise ValueError(f'"{name}" must be in nodes')
+        nodes[name] = _as_character(nodes[name])
+        options["nodeName"] = name
+        if nodes[name].duplicated().any():
+            nodes[name] = _make_unique(list(nodes[name]))
+            warnings.warn("name: must be unique in nodes")
 
-    return net
+        if links is not None:
+            known = set(nodes[name])
+            keep = links[source].isin(known) & links[target].isin(known) & (links[source] != links[target])
+            links = links[keep].reset_index(drop=True)
+            if links.empty:
+                links = None
+                warnings.warn(f"links: no row (source and target) matches the '{name}' column of the nodes")
+        if links is None:
+            options.pop("linkSource", None)
+            options.pop("linkTarget", None)
 
+        # graph options
+        options["cex"] = check_cex(a.cex)
+        distance, repulsion, zoom = a.distance, a.repulsion, a.zoom
+        if not (isinstance(distance, (int, float)) and 0 <= distance <= 100):
+            distance = 10
+            warnings.warn("distance: must be numeric between 0 and 100")
+        options["distance"] = distance
+        if not (isinstance(repulsion, (int, float)) and 0 <= repulsion <= 100):
+            repulsion = 25
+            warnings.warn("repulsion: must be numeric between 0 and 100")
+        options["repulsion"] = repulsion
+        if not (isinstance(zoom, (int, float)) and 0.1 <= zoom <= 10):
+            zoom = 1
+            warnings.warn("zoom: must be numeric between 0.1 and 10")
+        options["zoom"] = zoom
 
-  def __str__(self):
-      """Returns a string representation of the graph."""
-      output = []
+        if a.scenarios is not None:
+            if isinstance(a.scenarios, (int, float, np.integer, np.floating)) and not isinstance(a.scenarios, bool):
+                options["scenarios"] = int(a.scenarios) if float(a.scenarios).is_integer() else a.scenarios
+            else:
+                warnings.warn("scenarios: must be numeric")
+        if a.limits is not None:
+            if len(a.limits) != 4:
+                warnings.warn("limits: must be a numeric list of length 4")
+            else:
+                options["limits"] = [float(x) for x in a.limits]
 
-      if 'main' in self.options:
-        output.append("Title: " + self.options['main'])
-        output.append("")
+        for key, value in (("main", a.main), ("note", a.note), ("help", a.help)):
+            if value is not None:
+                options[key] = value
+        if a.background is not None:
+            if isinstance(a.background, str) and is_color(a.background):
+                options["background"] = col2hex(a.background)
+            elif isinstance(a.background, str) and os.path.isfile(a.background):
+                options["background"] = a.background
+            else:
+                warnings.warn("background: must be a valid color or image file")
 
-      for frame, count in ((self.nodes_frame(), self.ncount()), (self.links_frame(), self.lcount())):
-        if count:
-          output.append(frame.head(6).to_string(index=False))
-          if count > 6:
-            output.append("...")
-          output.append("")
+        options["language"] = check_language(a.language)
+        default_color = check_default_color(a.default_color)
+        if default_color is not None:
+            options["defaultColor"] = default_color
 
-      if 'note' in self.options:
-        output.append(self.options['note'])
-        output.append("")
+        if a.help is None and options["language"] == "es":
+            path = os.path.join(os.path.dirname(__file__), "www", "help_es.html")
+            with open(path, encoding="utf-8") as handle:
+                options["help"] = "".join(line.rstrip("\r\n") for line in handle)
 
-      return "\n".join(output)
+        for key, flag in (("nodeBipolar", a.node_bipolar), ("linkBipolar", a.link_bipolar),
+                          ("helpOn", a.help_on), ("frequencies", a.frequencies),
+                          ("statistics", a.statistics)):
+            if flag is True:
+                options[key] = True
+        if a.controls is not None:
+            options["controls"] = [int(c) for c in ([a.controls] if np.isscalar(a.controls) else a.controls)]
+        if a.mode is not None:
+            letters = [str(m)[:1].lower() for m in ([a.mode] if isinstance(a.mode, str) else a.mode)]
+            options["mode"] = letters if not isinstance(a.mode, str) else letters[0]
+        for key, value in (("axesLabels", a.axes_labels), ("nodesLabel", a.nodes_label),
+                           ("linksLabel", a.links_label)):
+            if value is not None:
+                options[key] = [str(v) for v in value] if not isinstance(value, str) else str(value)
 
+        fixed = a.show_coordinates if a.fixed is None else a.fixed
+        for key, flag in (("fixed", fixed), ("showCoordinates", a.show_coordinates),
+                          ("showArrows", a.show_arrows), ("showAxes", a.show_axes),
+                          ("roundedItems", a.rounded_items)):
+            if flag is True:
+                options[key] = True
 
-  def summary(self):
-      """Prints the summary of the graph."""
-      output = []
-      output.append(str(self.ncount())+" nodes and "+str(self.lcount())+" links.")
+        # the legend is control 8
+        controls = options.get("controls")
+        if a.show_legend:
+            if controls is None:
+                options["controls"] = [8]
+            elif 0 not in controls and -8 not in controls and 8 not in controls:
+                options["controls"] = controls + [8]
+        elif controls is not None and 8 in controls:
+            rest = [c for c in controls if c != 8]
+            if rest:
+                options["controls"] = rest
+            else:
+                del options["controls"]
 
-      stats = ["Min","Median","Mean","Max"]
-      row_format ="{:>15}" * len(stats)
-      freq = set(frequencyList) & set(self.nodes.keys())
-      if len(freq)==1:
-        freq = list(freq)[0]
-        output.append(freq+' distribution of nodes:')
-        freq = self.nodes[freq]
-        freq = list(map(lambda x: str(round(x,2)),[min(freq),median(freq),mean(freq),max(freq)]))
-        output.append(row_format.format(*stats))
-        output.append(row_format.format(*freq))
+        # node options
+        if a.label is None:
+            options["nodeLabel"] = name
+        else:
+            column_option(options, "nodeLabel", a.label)
+        column_option(options, "nodeLabelSize", a.label_size)
+        column_option(options, "nodeGroup", a.group)
+        if a.group_text is True:
+            options["groupText"] = True
+        if isinstance(a.size, (int, float, np.integer, np.floating)) and not isinstance(a.size, bool):
+            options["defaultNodeSize"] = a.size
+        else:
+            column_option(options, "nodeSize", a.size)
+        column_option(options, "nodeLegend", a.legend)
+        column_option(options, "nodeText", a.ntext)
+        column_option(options, "nodeInfo", a.info)
+        column_option(options, "nodeOrder", a.sort)
+        if a.decreasing is True:
+            options["decreasing"] = True
+        column_option(options, "nodeBorder", a.border)
 
-      if 'linkWidth' in self.options:
-        lwidth = self.options['linkWidth']
-        output.append(lwidth+'\'s distribution:')
-        lwidth = self.links[lwidth]
-        lwidth = list(map(lambda x: str(round(x,2)),[min(lwidth),median(lwidth),mean(lwidth),max(lwidth)]))
-        output.append(row_format.format(*stats))
-        output.append(row_format.format(*lwidth))
-      
-      print("\n".join(output))
+        if a.image is not None:
+            images = [a.image] if isinstance(a.image, str) else list(a.image)
+            if set(images) - set(nodes.columns):
+                warnings.warn("image: names must match in nodes colnames.")
+            else:
+                options["imageItems"] = images
+                if a.image_names is not None:
+                    names = [a.image_names] if isinstance(a.image_names, str) else list(a.image_names)
+                    if len(names) == len(images):
+                        options["imageNames"] = names
+                    else:
+                        warnings.warn("imageNames: length must match with 'image' vector")
 
+        # link options
+        column_option(options, "linkWidth", a.lwidth)
+        column_option(options, "linkWeight", a.lweight)
+        column_option(options, "linkText", a.ltext)
+        column_option(options, "linkIntensity", a.intensity)
 
-  def plot(self, directory = None):
-      """Displays the graph in a web browser.
+        nodes, links = self._filters(nodes, links, name, source, target, a)
 
-      @param directory: string representing the directory where the web files
-      will be saved.
-      """
-      if not directory:
-        directory = mkdtemp()
-      netCreate(self,directory)
-      webbrowser.open(os.path.join(directory,'index.html'))
+        # colours and shapes
+        nodes, options = check_item_value(nodes, options, "nodeColor", color, "color")
+        nodes, options = check_item_value(nodes, options, "nodeShape", shape, "shape",
+                                          is_item=is_shape, auto_items=get_shapes, sanitize=capitalize)
+        if links is not None:
+            links, options = check_item_value(links, options, "linkColor", lcolor, "lcolor")
 
+        self._scale_limits(nodes, links, options, a)
 
-  @classmethod
-  def fromMatrix(klass, *args, **kwds):
-        """Constructs a graph from a matrix representation.
+        self.nodes = nodes
+        self.links = links
+        self.options = options
+        self.tree = self._check_tree(a.tree, nodes, name)
+        self.layouts = None
 
-        This representation assumes that the links of the graph are encoded
-        in a matrix (list of tuples or lists). Each item in the list must have
-        at least two elements, which specify the numeric index (one-based) of
-        the source and the target nodes of the link. The remaining elements
-        (if any) specify the link attributes of that link, where the names of
-        the link attributes originate from the C{linkAttrNames} list.
+        # column order
+        if a.node_attr_names:
+            first = [c for c in a.node_attr_names if c in nodes.columns]
+            if name not in first:
+                first = [name] + first
+            self.nodes = nodes[first + [c for c in nodes.columns if c not in first]]
+        if a.link_attr_names and links is not None:
+            first = [c for c in a.link_attr_names if c in links.columns]
+            self.links = links[first + [c for c in links.columns if c not in first]]
 
-        @param matrix: the data source for the links. This must be a list
-          where each item is a tuple (or list) containing at least two
-          items: the index (one-based) of the source and the target node.
-        @return: the graph that was constructed
+        if a.layout is not None:
+            self._add_layout(a.layout, a.lweight)
+        if a.community is not None:
+            self._add_community(a.community)
+        if a.centrality is not None:
+            from .igraph_io import cal_centr
+            columns = cal_centr(self, a.centrality)
+            for col in columns.columns:
+                if col not in ("nodes", "degree"):
+                    self.nodes[col] = columns[col].to_numpy()
+
+    @staticmethod
+    def _filters(nodes, links, name, source, target, a):
+        """``hidden`` columns from node_filter, link_filter and degree_filter."""
+        if a.node_filter is None and a.link_filter is None and a.degree_filter is None:
+            return nodes, links
+
+        def evaluate(rule, frame):
+            if callable(rule):
+                rule = rule(frame)
+            elif isinstance(rule, str):
+                rule = frame.eval(rule)
+            values = np.asarray(rule, dtype=bool)
+            if values.shape != (len(frame),):
+                raise ValueError("a filter must give one boolean per row")
+            return values
+
+        def hide_links():
+            # In R this helper changes a local copy of the links and has no effect: node
+            # filters never mark links as hidden in the object (the page hides the links of
+            # hidden nodes itself). The same is done here so that both objects are equal.
+            return None
+
+        nodes = nodes.copy()
+        nodes["hidden"] = False
+        if links is not None:
+            links = links.copy()
+            links["hidden"] = False
+        if a.node_filter is not None:
+            nodes["hidden"] = ~evaluate(a.node_filter, nodes)
+            hide_links()
+        if links is not None and a.link_filter is not None:
+            links["hidden"] = links["hidden"] | ~evaluate(a.link_filter, links)
+        if a.degree_filter is not None:
+            limits = [float(x) for x in np.atleast_1d(a.degree_filter)]
+            if len(limits) == 1:
+                limits.append(math.inf)
+            if links is None:
+                if min(limits) > 0:
+                    nodes["hidden"] = True
+            else:
+                visible = links[~links["hidden"]]
+                counts = pd.concat([visible[source], visible[target]]).value_counts()
+                degree = nodes[name].map(counts).fillna(0)
+                nodes["hidden"] = nodes["hidden"] | ~((degree >= limits[0]) & (degree <= limits[1]))
+                hide_links()
+        if not nodes["hidden"].any():
+            nodes = nodes.drop(columns="hidden")
+        if links is not None and not links["hidden"].any():
+            links = links.drop(columns="hidden")
+        return nodes, links
+
+    @staticmethod
+    def _scale_limits(nodes, links, options, a):
+        for limits, key, frame, label in ((a.node_scale_limits, "nodeColor", nodes, "color"),
+                                          (a.link_scale_limits, "linkColor", links, "lcolor")):
+            if limits is None:
+                continue
+            values = sorted(set(float(x) for x in limits))
+            column = options.get(key)
+            if len(values) not in (2, 3):
+                warnings.warn(f"{label.replace('lcolor', 'linkScaleLimits').replace('color', 'nodeScaleLimits')}"
+                              ": must be a numeric list of length 2 or 3")
+            elif column is None or frame is None or not pd.api.types.is_numeric_dtype(frame[column]):
+                warnings.warn(f"parameter '{label}' must specify a numeric column")
+            else:
+                prefix = "nodeScaleLimits_" if key == "nodeColor" else "linkScaleLimits_"
+                options[prefix + column] = values
+
+    @staticmethod
+    def _check_tree(tree, nodes, name):
+        if tree is None:
+            return None
+        frame = tree.copy() if isinstance(tree, pd.DataFrame) else pd.DataFrame(list(tree))
+        if frame.shape[1] < 2:
+            raise ValueError("tree: needs two columns (Source and Target)")
+        frame.columns = ["Source", "Target"] + [str(c) for c in frame.columns[2:]]
+        frame["Source"] = _as_character(frame["Source"])
+        frame["Target"] = _as_character(frame["Target"])
+        known = set(nodes[name])
+        frame = frame[frame["Source"].isin(known) & frame["Target"].isin(known)
+                      & (frame["Source"] != frame["Target"])].reset_index(drop=True)
+        if frame.empty:
+            warnings.warn("tree: no row (Source and Target) matches the name column of the nodes")
+            return None
+        return frame[["Source", "Target"]]
+
+    # ------------------------------------------------------ layout, groups ----
+    def _layout_frame(self, value) -> pd.DataFrame | None:
+        """A layout as a DataFrame of two columns, one row per node (None if invalid)."""
+        n = len(self.nodes)
+        frame = pd.DataFrame(value)
+        if frame.shape != (n, 2) or not all(pd.api.types.is_numeric_dtype(t) for t in frame.dtypes):
+            return None
+        if isinstance(value, pd.DataFrame):
+            index = [str(i) for i in value.index]
+            names = list(self.nodes[self.options["nodeName"]])
+            if set(index) == set(names) and index != names:
+                frame = frame.set_axis(index, axis=0).loc[names]
+        frame = frame.reset_index(drop=True)
+        if all(isinstance(c, (int, np.integer)) for c in frame.columns):
+            frame.columns = ["", ""]
+        return frame
+
+    def _add_layout(self, layout, lweight=None):
+        from .igraph_io import to_igraph
+        from .layouts import compute_layout, layout_code
+
+        def compute(code):
+            return pd.DataFrame(compute_layout(to_igraph(self), code, criteria=lweight),
+                                columns=["", ""])
+
+        bad = "layout: each layout must be a numeric matrix and have a pair of coordinates per node"
+        if isinstance(layout, str):
+            code = layout_code(layout)
+            if code is not None:
+                self._set_single_layout(compute(code))
+            return
+        if isinstance(layout, (list, tuple)) and layout and all(isinstance(x, str) for x in layout):
+            layout = {x: x for x in layout}
+        if isinstance(layout, dict):
+            planes = {}
+            for label, value in layout.items():
+                if isinstance(value, str):
+                    code = layout_code(value)
+                    if code is None:
+                        continue
+                    planes[str(label)] = compute(code)
+                else:
+                    frame = self._layout_frame(value)
+                    if frame is None:
+                        warnings.warn(bad)
+                        return
+                    planes[str(label)] = frame
+            if len(planes) == 1:
+                self._set_single_layout(next(iter(planes.values())))
+            elif planes:
+                self.layouts = planes
+                if "axesLabels" not in self.options:
+                    self.options["layoutsAxesLabels"] = {k: [str(c) for c in v.columns]
+                                                         for k, v in planes.items()}
+            return
+        frame = self._layout_frame(layout)
+        if frame is None:
+            warnings.warn(bad)
+        else:
+            self._set_single_layout(frame)
+
+    def _set_single_layout(self, frame: pd.DataFrame):
+        self.nodes["fx"] = frame.iloc[:, 0].to_numpy()
+        self.nodes["fy"] = frame.iloc[:, 1].to_numpy()
+        labels = [str(c) for c in frame.columns]
+        if "axesLabels" not in self.options and any(labels):
+            self.options["axesLabels"] = labels
+
+    def _add_community(self, method):
+        from .igraph_io import to_igraph
+        from .layouts import community_code, compute_membership
+
+        code = community_code(method)
+        if code is None:
+            return
+        membership = compute_membership(to_igraph(self), code)
+        width = len(str(max(membership)))
+        self.nodes["community"] = [f"G.{m:0{width}d}" for m in membership]
+        used = [self.options.get("nodeShape"), self.options.get("nodeColor")]
+        if "community" not in used:
+            self.options["nodeGroup"] = "community"
+
+    # ---------------------------------------------------------- accessors ----
+    def ncount(self) -> int:
+        """Number of nodes."""
+        return len(self.nodes)
+
+    def lcount(self) -> int:
+        """Number of links."""
+        return 0 if self.links is None else len(self.links)
+
+    def nodes_frame(self) -> pd.DataFrame:
+        """A copy of the node table."""
+        return self.nodes.copy()
+
+    def links_frame(self) -> pd.DataFrame:
+        """A copy of the link table (empty if there are no links)."""
+        if self.links is None:
+            return pd.DataFrame({"Source": [], "Target": []})
+        return self.links.copy()
+
+    def add(self, **kwargs):
+        """A new netCoin object with some arguments changed or added.
+
+        Port of ``addNetCoin``: every argument of the constructor can be given
+        (``nodes``, ``links``, ``color``, ``main``...) and replaces the one the object was
+        built with; the rest is kept. The original is not modified.
         """
+        changes = _normalize_legacy(kwargs, strict=False)
+        unknown = set(changes) - set(self._args)
+        if unknown:
+            raise TypeError("unknown netCoin arguments: " + ", ".join(sorted(unknown)))
+        arguments = deepcopy(self._args)
+        arguments.update(changes)
+        return netCoin(**arguments)
 
-        if 'matrix' in kwds:
-          matrix = kwds['matrix']
+    @classmethod
+    def _from_parts(cls, nodes: pd.DataFrame, links: pd.DataFrame | None, options: dict,
+                    tree: pd.DataFrame | None = None, layouts: dict | None = None):
+        """An object made of finished parts (no checks): what multigraphCreate builds."""
+        net = cls.__new__(cls)
+        net._args = {}
+        net.nodes, net.links, net.options, net.tree, net.layouts = nodes, links, options, tree, layouts
+        return net
+
+    @classmethod
+    def from_matrix(cls, matrix, link_attr_names: Sequence[str] | None = None, **kwargs):
+        """A network from a matrix of links: one row per link, columns = source, target, ....
+
+        The first two columns are the (1-based) positions in ``nodes`` of the source and
+        target of each link (or names); the others are link attributes, named by
+        ``link_attr_names`` (``Source``, ``Target``, ``attr2``... by default).
+        """
+        rows = [list(r) for r in matrix]
+        if len({len(r) for r in rows}) != 1:
+            raise ValueError("all rows in 'matrix' must have the same length")
+        width = len(rows[0])
+        if width < 2:
+            raise ValueError("'matrix' must have at least two items")
+        names = list(link_attr_names) if link_attr_names is not None and len(link_attr_names) >= 2 else None
+        if names is None:
+            names = ["Source", "Target"] + [f"attr{i}" for i in range(2, width)]
+        names = names[:width]
+        kwargs["source"], kwargs["target"] = names[:2]
+        kwargs["links"] = pd.DataFrame(rows, columns=names)
+        kwargs["link_attr_names"] = names
+        return cls(**kwargs)
+
+    @classmethod
+    def fromMatrix(cls, *args, **kwargs):
+        """Deprecated name of :meth:`from_matrix`."""
+        warnings.warn("'fromMatrix' is deprecated, use 'from_matrix'", DeprecationWarning, stacklevel=2)
+        if "linkAttrNames" in kwargs:
+            kwargs["link_attr_names"] = kwargs.pop("linkAttrNames")
+        return cls.from_matrix(*args, **kwargs)
+
+    # ------------------------------------------------------------- output ----
+    def _create(self, directory, title=None):
+        """Write the web page of this graph (also used by multigraphCreate)."""
+        netCreate(self, directory, title)
+
+    def plot(self, directory: str | None = None):
+        """Write the page (in a temporary folder by default) and open it in the browser."""
+        directory = directory or mkdtemp()
+        self._create(directory)
+        webbrowser.open(os.path.join(directory, "index.html"))
+
+    def __repr__(self) -> str:
+        lines = ["<netCoin object>"]
+        shown = [c for c in self.nodes.columns if c != self.options.get("nodeText")]
+        lines.append(f"Nodes: {len(self.nodes)}  ({', '.join(map(str, shown))})")
+        if self.links is not None:
+            lines.append(f"Links: {len(self.links)}  ({', '.join(map(str, self.links.columns))})")
         else:
-          args = list(args)
-          if len(args):
-            matrix = args[0]
+            lines.append("Links: 0")
+        if {"fx", "fy"} <= set(self.nodes.columns):
+            planes = list(self.layouts) if self.layouts else ["layout"]
+            lines.append("Planes: " + ", ".join(planes))
+        return "\n".join(lines)
 
-        # Check matrix
-        lengths = set(map(lambda x: len(x),matrix))
-        if len(lengths)==1:
-          n = list(lengths)[0]
-          if n < 2:
-            raise Exception("'matrix' must have at least two items")
-        else:
-          raise Exception("all rows in 'matrix' must have the same length")
+    def __str__(self) -> str:
+        output = []
+        if "main" in self.options:
+            output.append("Title: " + str(self.options["main"]))
+            output.append("")
+        for frame, count in ((self.nodes, self.ncount()), (self.links, self.lcount())):
+            if count:
+                output.append(frame.head(6).to_string(index=False))
+                if count > 6:
+                    output.append("...")
+                output.append("")
+        if "note" in self.options:
+            output.append(str(self.options["note"]))
+            output.append("")
+        return "\n".join(output)
 
-        # Check attribute names
-        linkAttrNames = None
-        if 'linkAttrNames' in kwds and type(kwds['linkAttrNames']) is list and len(kwds['linkAttrNames'])>=2:
-          linkAttrNames = kwds['linkAttrNames']
-          if len(linkAttrNames)>n:
-            linkAttrNames = linkAttrNames[:n]
-        if not linkAttrNames:
-          linkAttrNames = list(map(lambda x: 'attr'+str(x-1),range(n)))
-          linkAttrNames[:2] = ['Source','Target']
-        kwds['source'], kwds['target'] = linkAttrNames[:2]
-        kwds['linkAttrNames'] = linkAttrNames
+    def summary(self):
+        """Print the number of nodes and links and how the frequency and link width are distributed."""
+        lines = [f"{self.ncount()} nodes and {self.lcount()} links."]
+        stats = ["Min", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max"]
 
-        # Construct the links
-        links = {}
-        matrix = transpose(matrix)
-        for index, item in enumerate(linkAttrNames):
-          links[item] = matrix[index]
+        def describe(values):
+            q = values.describe()
+            return [f"{q[k]:.2f}" for k in ("min", "25%", "50%", "mean", "75%", "max")]
 
-        kwds['links'] = links
-
-        # Construct the graph
-        return klass(**kwds)
-
-
-def checkTree(links,names):
-      if links:
-        i = 0
-        while i < len(links):
-          if not ((links[i][0] in names) and (links[i][1] in names)):
-            del links[i]
-          else:
-            i += 1
-        if i==0:
-          print("tree: any pair matches properly vertex names")
-          return None
-      return links
-
+        row = "{:>10}" * len(stats)
+        freq = [c for c in frequencyList if c in self.nodes.columns]
+        if len(freq) == 1:
+            lines += [f"{freq[0]} distribution of nodes:", row.format(*stats),
+                      row.format(*describe(pd.to_numeric(self.nodes[freq[0]], errors="coerce")))]
+        width = self.options.get("linkWidth")
+        if width is None and self.links is not None and self.links.shape[1] > 2:
+            width = self.links.columns[2]
+        if width is not None and self.links is not None:
+            lines += [f"{width}'s distribution:", row.format(*stats),
+                      row.format(*describe(pd.to_numeric(self.links[width], errors="coerce")))]
+        print("\n".join(lines))

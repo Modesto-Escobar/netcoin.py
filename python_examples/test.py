@@ -19,7 +19,7 @@ Edges = {
   'p(Z)':[0.27,0.27]
 }
 
-net = nc.netCoin(Nodes, Edges, name = "Gender", lwidth="value", defaultColor = "firebrick", main = "This is a title", directory = "gender", language='es')
+net = nc.netCoin(Nodes, Edges, name = "Gender", lwidth="value", default_color = "firebrick", main = "This is a title", directory = "gender", language='es')
 
 net.plot()
 

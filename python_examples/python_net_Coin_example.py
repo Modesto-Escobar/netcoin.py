@@ -65,7 +65,7 @@ nodes = {
   'Ambito': ['Personaje', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Familia', 'Amistad', 'Amistad', 'Amistad', 'Otros', 'Amistad', 'Familia', 'Amistad', 'Amistad', 'Amistad', 'Amistad', 'Amistad', 'Amistad']
 }
 
-net = netCoin.fromMatrix(x, linkAttrNames = l, nodes = nodes, nodeAttrNames = listaVar, name='variable', color="Edad", shape="Sexo", main='Fotos de Unamuno', background="./icons/usal.png", language="es")
+net = netCoin.from_matrix(x, link_attr_names = l, nodes = nodes, node_attr_names = listaVar, name='variable', color="Edad", shape="Sexo", main='Fotos de Unamuno', background="./icons/usal.png", language="es")
 net.plot(directory="tmp/unamuno")
 print(net)
 
@@ -89,7 +89,7 @@ links = {
   'p(Z)':[0.27,0.27]
 }
 
-net2 = netCoin(nodes, links, name = "Gender", lwidth="value", defaultColor = "firebrick", background="#e8e3d0", main = "This is a title", limits = [0,0,4,3], image = ["icons","icons2"], directory = "tmp/gender")
+net2 = netCoin(nodes, links, name = "Gender", lwidth="value", default_color = "firebrick", background="#e8e3d0", main = "This is a title", limits = [0,0,4,3], image = ["icons","icons2"], directory = "tmp/gender")
 
 
 # Dice
@@ -118,18 +118,18 @@ x = [
 ]
 tree = [['odd','1'],['even','2'],['odd','3'],['even','4'],['odd','5'],['even','6']]
 
-net3 = netCoin.fromMatrix(x, nodes = nodes, linkAttrNames = lcolnames, nodeAttrNames = ncolnames, tree = tree, lwidth = "Haberman")
+net3 = netCoin.from_matrix(x, nodes = nodes, link_attr_names = lcolnames, node_attr_names = ncolnames, tree = tree, lwidth = "Haberman")
 net3.summary()
 net3.plot(directory="tmp/dice")
 
 nets = []
 edges = [list(map(lambda x: x,row[:2])) for row in x]
-nets.append(netCoin.fromMatrix(edges, nodes=nodes, tree=tree))
+nets.append(netCoin.from_matrix(edges, nodes=nodes, tree=tree))
 for i in range(7,15):
   nodes['name'].append(str(i))
   nodes['frequency'].append(0)
   edges.append([nodes['name'].index(str(i-1))+1,nodes['name'].index(str(i))+1])
-  nets.append(netCoin.fromMatrix(edges, nodes=nodes, tree=tree))
+  nets.append(netCoin.from_matrix(edges, nodes=nodes, tree=tree))
 
 multigraphCreate(nets, mode="f", directory="tmp/dice_incremental")
 
@@ -140,12 +140,12 @@ nets = []
 N = {'name': ['Man','Woman','Undet0']}
 E = [(1,2),(2,3)]
 
-nets.append(netCoin.fromMatrix(E, nodes=N, label=False, repulsion=100))
+nets.append(netCoin.from_matrix(E, nodes=N, label=False, repulsion=100))
 
 for i in range(100):
   N['name'].append('Undet'+str(i+1))
   E.append((i+3,i+4))
-  nets.append(netCoin.fromMatrix(E, nodes=N, label=False, repulsion=99-i))
+  nets.append(netCoin.from_matrix(E, nodes=N, label=False, repulsion=99-i))
 
 multigraphCreate(nets, mode="f", directory="tmp/incremental")
 

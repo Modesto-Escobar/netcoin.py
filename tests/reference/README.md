@@ -35,3 +35,14 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 | `coin(weight = w)` | Overwrites a user-given `maximum` with `sum(w)`. Python honours `maximum` and defaults to `sum(w)`. |
 | `allNet(..., pairwise = TRUE)` with missing values | Fails: `colSums(incidences) > 0` is `NA` and is used as a column index. Python ignores the `NA` in the sums. |
 | `allNet(..., layout = "mc")` | The layout is computed on all the variables, so it does not line up with the nodes if `minimum`, `maximum` or `sort` change them. Python uses the variables that are nodes. |
+| `netCoin(node_filter / degreeFilter)` | The helper `hideLinks()` changes a local copy of the links and has no effect: the links of hidden nodes are never marked `hidden` in the object (the page hides them). Python does the same so that both objects are equal. |
+| `cluster_edge_betweenness` | The result is the unweighted one even if a `weight` attribute exists. Python follows it. |
+| group numbers of communities | The numbers `G.1`, `G.2`... come from the algorithm's internals; the groups are the same but may be numbered differently (the tests compare the partition). |
+
+## Differences that come from the igraph version
+
+R uses igraph 2.3.4 and python-igraph 1.0.0 has a newer C core, so `kamada_kawai` and `sugiyama`
+return other coordinates (strict xfails). Layouts that start at random (`fruchterman_reingold`,
+`drl`, `lgl`, `random`, `force_atlas2`...) and communities such as `louvain`, `label_prop` or
+`spinglass` cannot be compared number by number. `gem` is not in python-igraph.
+

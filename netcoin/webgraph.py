@@ -122,26 +122,62 @@ def column_option(options: dict, item: str, variable) -> dict:
     return options
 
 
-def check_item_value(items: pd.DataFrame, options: dict, prop: str, value, name: str):
-    """Colour (or similar) of every row of ``items``: port of rD3plot's ``checkItemValue``.
+SYMBOL_TYPES = ["Circle", "Square", "Diamond", "Triangle", "Cross", "Star", "Wye"]
 
-    ``value`` can be ``None`` (remove), the name of a column of ``items``, one colour,
-    a vector with one value per row (colours, or numbers/categories that get a
-    colour of the category palette) or a DataFrame with several of those vectors.
+
+def capitalize(word: str) -> str:
+    """First letter in capitals, the rest in lowercase (rD3plot's ``capitalize``)."""
+    word = str(word)
+    return word[:1].upper() + word[1:].lower()
+
+
+def is_shape(shapes) -> bool:
+    """True if every element is the name of a symbol (``Circle``, ``Square``...)."""
+    items = [shapes] if isinstance(shapes, str) else list(shapes)
+    return bool(items) and all(isinstance(s, str) and capitalize(s) in SYMBOL_TYPES for s in items)
+
+
+def get_shapes(items) -> list[str]:
+    """One symbol per item: numbers (or the codes of categories) pick them in turn."""
+    values = pd.Series(items)
+    if not pd.api.types.is_numeric_dtype(values):
+        values = pd.Series(pd.Categorical(values).codes + 1, index=values.index)
+    index = ((values.astype(int) - 1) % len(SYMBOL_TYPES)).to_numpy()
+    return [SYMBOL_TYPES[i] for i in index]
+
+
+def check_item_value(items: pd.DataFrame, options: dict, prop: str, value, name: str,
+                     is_item=None, auto_items=None, sanitize=None):
+    """A visual attribute (colour, shape...) of every row of ``items``: ``checkItemValue``.
+
+    ``value`` can be ``None`` (remove the option), the name of a column of ``items``,
+    one valid value (a colour, a shape name) for all rows, a vector with one value per
+    row (valid values, or numbers/categories that get one automatically) or a
+    DataFrame with several such vectors. By default it works with colours; for other
+    attributes give ``is_item`` (does a vector hold valid values?), ``auto_items``
+    (numbers/categories -> values) and ``sanitize`` (normalise one valid value).
+
     Returns the (possibly extended) ``items`` and ``options``.
     """
+    is_item = is_item or is_color
+    auto_items = auto_items or category_colors
+    sanitize = sanitize or col2hex
     items = items.copy()
     options = dict(options)
 
     def prepare(values):
         series = pd.Series(list(values))
-        if pd.api.types.is_numeric_dtype(series) or isinstance(values, pd.Categorical) or \
-                isinstance(getattr(values, "dtype", None), pd.CategoricalDtype):
-            return category_colors(values)
-        if all(isinstance(v, str) for v in series) and is_color(list(series)):
-            return [col2hex(v) for v in series]
+        categorical = isinstance(values, pd.Categorical) or isinstance(
+            getattr(values, "dtype", None), pd.CategoricalDtype)
+        if pd.api.types.is_numeric_dtype(series) or categorical:
+            return auto_items(values)
+        if all(isinstance(v, str) for v in series) and is_item(list(series)):
+            return [sanitize(v) for v in series]
         warnings.warn(f"{name}: this value cannot be a {name}", stacklevel=4)
         return None
+
+    def valid_single(v):
+        return isinstance(v, str) and is_item([v])
 
     if value is None:
         options.pop(prop, None)
@@ -156,12 +192,11 @@ def check_item_value(items: pd.DataFrame, options: dict, prop: str, value, name:
             options[prop] = str(value.columns[0])
         else:
             warnings.warn(f"{name}: number of rows doesn't match with the items", stacklevel=3)
-    elif (not isinstance(value, str) and np.ndim(value) > 0 and len(value) > 1) or \
-            (isinstance(value, str) and is_color(value) and value not in items.columns):
+    elif (not isinstance(value, str) and np.ndim(value) > 0 and len(value) > 1) or             (valid_single(value) and value not in items.columns):
         values = [value] * len(items) if isinstance(value, str) else list(value)
         if len(values) == len(items):
             legend = [str(v) for v in values]
-            colors = prepare(values if not isinstance(value, pd.Series) else value)
+            colors = prepare(value if isinstance(value, (pd.Series, pd.Categorical)) else values)
             if colors is not None:
                 items[f"-{prop}-"] = legend
                 items[f"_{prop}_-{prop}-"] = colors

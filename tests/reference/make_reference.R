@@ -417,5 +417,128 @@ pie_case("links_color", 'pieCoin(coin(galapagos), links = pie_links, lcolor = "f
 pie_case("links_numeric", 'pieCoin(coin(galapagos), links = pie_links, lcolor = seq_len(nrow(pie_links)))',
          pieCoin(C_gal, links = pie_links, lcolor = seq_len(nrow(pie_links))))
 
+
+# ------------------------------------------------------------ netCoin() ----
+net_nodes <- data.frame(
+  name  = letters[1:10],
+  label = paste("Node", LETTERS[1:10]),
+  group = c("g1", "g2", "g1", "g3", "g2", "g1", "g3", "g2", "g1", "g3"),
+  kind  = c("x", "y", "x", "y", "x", "y", "x", "y", "x", "y"),
+  size  = c(5, 3, 8, 1, 9, 4, 7, 2, 6, 10),
+  value = c(0, 1.5, 3, 4.5, 6, 7.5, 9, 10.5, 12, 13.5),
+  text  = paste0("t", 1:10),
+  stringsAsFactors = FALSE)
+net_links <- data.frame(
+  Source = c("a", "a", "b", "c", "d", "e", "f", "g", "h", "i", "a", "c", "e", "g"),
+  Target = c("b", "c", "c", "d", "e", "f", "g", "h", "i", "j", "d", "e", "g", "i"),
+  weight = c(.9, .5, .2, .7, .4, .8, .1, .6, .3, .95, .55, .25, .45, .75),
+  type   = rep(c("p", "q", "r"), length.out = 14),
+  note   = paste0("l", 1:14),
+  stringsAsFactors = FALSE)
+net_tree <- data.frame(parent = c("a", "a", "b", "c"), child = c("b", "c", "d", "e"), stringsAsFactors = FALSE)
+write_csv(net_nodes, "net_nodes", dir_in); write_csv(net_links, "net_links", dir_in); write_csv(net_tree, "net_tree", dir_in)
+
+net_case <- function(id, call_txt, N) {
+  nd <- as.data.frame(N$nodes); rownames(nd) <- NULL
+  nd[] <- lapply(nd, function(x) if (is.factor(x)) as.character(x) else x)
+  write_csv(nd, paste0("net_", id, "_nodes"), dir_out)
+  if (!is.null(N$links)) { lk <- as.data.frame(N$links); rownames(lk) <- NULL; lk[] <- lapply(lk, function(x) if (is.factor(x)) as.character(x) else x); write_csv(lk, paste0("net_", id, "_links"), dir_out) }
+  o <- list(options = plain(N$options), nlinks = if (is.null(N$links)) 0 else nrow(N$links))
+  if (!is.null(N$tree)) o$tree <- lapply(as.list(N$tree), unname)
+  if (!is.null(N$layouts)) o$layouts <- lapply(N$layouts, function(m) unname(split(unname(m), row(m))))
+  jsonw(o, paste0("net_", id, ".json"))
+  add_case(paste0("net_", id), call_txt, paste0("net_", id, c("_nodes", "_links")))
+}
+
+net_case("basic", 'netCoin(nodes, links, label = "label", size = "size", color = "group", shape = "kind", group = "group", lwidth = "weight", lcolor = "type", ltext = "note", ntext = "text", info = "text", main = "A network", note = "A note", scenarios = 10)',
+         netCoin(net_nodes, net_links, label = "label", size = "size", color = "group", shape = "kind", group = "group",
+                 lwidth = "weight", lcolor = "type", ltext = "note", ntext = "text", info = "text",
+                 main = "A network", note = "A note", scenarios = 10))
+net_case("single", 'netCoin(nodes, links, color = "firebrick", shape = "Square", lcolor = "#00f", size = 12, label = "", legend = "kind", border = "group", labelSize = "size")',
+         netCoin(net_nodes, net_links, color = "firebrick", shape = "Square", lcolor = "#00f", size = 12, label = "",
+                 legend = "kind", border = "group", labelSize = "size"))
+net_case("numeric", 'netCoin(nodes, links, color = "value", nodeScaleLimits = c(0, 5, 14), lcolor = "weight", linkScaleLimits = c(0, 1), intensity = "weight", nodeBipolar = TRUE, linkBipolar = TRUE)',
+         netCoin(net_nodes, net_links, color = "value", nodeScaleLimits = c(0, 5, 14), lcolor = "weight",
+                 linkScaleLimits = c(0, 1), intensity = "weight", nodeBipolar = TRUE, linkBipolar = TRUE))
+net_case("lists", 'netCoin(nodes, links, color = list(group = c(g1 = "red", g2 = "blue", g3 = "green")), shape = list(kind = c(x = "Circle", y = "star")), lcolor = list(type = c(p = "orange", q = "grey", r = "black")))',
+         netCoin(net_nodes, net_links, color = list(group = c(g1 = "red", g2 = "blue", g3 = "green")),
+                 shape = list(kind = c(x = "Circle", y = "star")),
+                 lcolor = list(type = c(p = "orange", q = "grey", r = "black"))))
+net_case("vectors", 'netCoin(nodes, links, color = <10 colours>, shape = 1:10, lcolor = 1:14)',
+         netCoin(net_nodes, net_links, color = rep(c("red", "#0000FF", "light blue", "gray 50", "Forest Green"), 2),
+                 shape = 1:10, lcolor = 1:14))
+net_case("categories", 'netCoin(nodes, links, color = factor(group), shape = factor(kind), lcolor = factor(type))',
+         netCoin(net_nodes, net_links, color = factor(net_nodes$group), shape = factor(net_nodes$kind),
+                 lcolor = factor(net_links$type)))
+net_case("filters", 'netCoin(nodes, links, nodeFilter = "size > 2", linkFilter = "weight > 0.3")',
+         netCoin(net_nodes, net_links, nodeFilter = "size > 2", linkFilter = "weight > 0.3"))
+net_case("degree", 'netCoin(nodes, links, degreeFilter = c(2, 4))', netCoin(net_nodes, net_links, degreeFilter = c(2, 4)))
+net_case("degree_one", 'netCoin(nodes, links, degreeFilter = 3, nodeFilter = "kind == \'x\'")',
+         netCoin(net_nodes, net_links, degreeFilter = 3, nodeFilter = "kind == 'x'"))
+net_case("options", 'netCoin(nodes, links, controls = c(1,2,3), showLegend = FALSE, mode = "network", repulsion = 40, distance = 15, zoom = 2, limits = c(0,0,10,10), background = "#ABC", defaultColor = "firebrick", helpOn = TRUE, help = "Help text", showCoordinates = TRUE, showArrows = TRUE, showAxes = TRUE, axesLabels = c("X","Y"), nodesLabel = "N", linksLabel = "L", sort = "size", decreasing = TRUE, frequencies = TRUE, statistics = TRUE, roundedItems = TRUE, cex = 1.3, groupText = TRUE, group = "group")',
+         netCoin(net_nodes, net_links, controls = c(1, 2, 3), showLegend = FALSE, mode = "network", repulsion = 40,
+                 distance = 15, zoom = 2, limits = c(0, 0, 10, 10), background = "#ABC", defaultColor = "firebrick",
+                 helpOn = TRUE, help = "Help text", showCoordinates = TRUE, showArrows = TRUE, showAxes = TRUE,
+                 axesLabels = c("X", "Y"), nodesLabel = "N", linksLabel = "L", sort = "size", decreasing = TRUE,
+                 frequencies = TRUE, statistics = TRUE, roundedItems = TRUE, cex = 1.3, groupText = TRUE, group = "group"))
+net_case("controls", 'netCoin(nodes, links, controls = c(1,5,8), showLegend = FALSE)', netCoin(net_nodes, net_links, controls = c(1, 5, 8), showLegend = FALSE))
+net_case("controls0", 'netCoin(nodes, links, controls = 0)', netCoin(net_nodes, net_links, controls = 0))
+net_case("spanish", 'netCoin(nodes, links, name = "name", language = "es")', netCoin(net_nodes, net_links, language = "es", name = "name"))
+net_case("tree", 'netCoin(nodes, links, tree = tree)', netCoin(net_nodes, net_links, tree = net_tree))
+net_case("linksonly", 'netCoin(links = links)', netCoin(links = net_links))
+net_case("nolinks", 'netCoin(nodes, size = "size", name = "label")', netCoin(net_nodes, size = "size", name = "label"))
+net_case("images", 'netCoin(nodes, links, image = c("label","text"), imageNames = c("group","kind"))',
+         netCoin(net_nodes, net_links, image = c("label", "text"), imageNames = c("group", "kind")))
+net_case("sparse", 'netCoin(nodes[c(1,2,4)], links, name = "name")', netCoin(net_nodes[c(1, 2, 4), c("name", "size")], net_links))
+
+# layouts: given matrices and deterministic names
+lay <- cbind(x = seq(0, 9), y = rep(c(0, 1), 5))
+net_case("layout_matrix", 'netCoin(nodes, links, layout = cbind(x=0:9, y=rep(0:1,5)))', netCoin(net_nodes, net_links, layout = lay))
+lay_nocols <- unname(lay)
+net_case("layout_nocols", 'netCoin(nodes, links, layout = unname(cbind(...)))', netCoin(net_nodes, net_links, layout = lay_nocols))
+net_case("layout_planes", 'netCoin(nodes, links, layout = list(first = cbind(x,y), second = cbind(u,v)))',
+         netCoin(net_nodes, net_links, layout = list(first = lay, second = cbind(u = lay[, 2], v = lay[, 1]))))
+for (lname in c("circle", "grid", "star", "reingold_tilford", "kamada_kawai", "sugiyama")) {
+  net_case(paste0("layout_", lname), sprintf('netCoin(nodes, links, layout = "%s")', lname), netCoin(net_nodes, net_links, layout = lname))
+}
+net_case("layout_two_names", 'netCoin(nodes, links, layout = c("circle", "grid"))', netCoin(net_nodes, net_links, layout = c("circle", "grid")))
+net_case("layout_mixed", 'netCoin(nodes, links, layout = list(mine = cbind(x,y), "circle"))', netCoin(net_nodes, net_links, layout = list(mine = lay, "circle")))
+
+# communities and centralities
+for (cm in c("walktrap", "fast_greedy", "leading_eigen", "edge_betweenness")) {
+  net_case(paste0("community_", cm), sprintf('netCoin(nodes, links, community = "%s")', cm), netCoin(net_nodes, net_links, community = cm))
+}
+net_case("community_color", 'netCoin(nodes, links, community = "walktrap", color = "community")', netCoin(net_nodes, net_links, community = "walktrap", color = "group"))
+net_case("centrality", 'netCoin(nodes, links, centrality = c("wdegree","closeness","betweenness","eigen"))',
+         netCoin(net_nodes, net_links, centrality = c("wdegree", "closeness", "betweenness", "eigen")))
+
+# conversions and exports
+G <- toIgraph(netCoin(net_nodes, net_links, label = "label", size = "size", color = "group", lwidth = "weight", lcolor = "type", showArrows = TRUE))
+vtab <- igraph::as_data_frame(G, what = "vertices"); rownames(vtab) <- NULL
+etab <- igraph::as_data_frame(G, what = "edges"); rownames(etab) <- NULL
+write_table(vtab, "igraph_vertices"); write_table(etab, "igraph_edges")
+write_json(list(directed = igraph::is_directed(G)), file.path(dir_out, "igraph_meta.json"), auto_unbox = TRUE)
+add_case("igraph_to", 'toIgraph(netCoin(nodes, links, label, size, color, lwidth, lcolor, showArrows = TRUE))', c("igraph_vertices", "igraph_edges"))
+cent <- netCoin:::calCentr(netCoin(net_nodes, net_links), "all")$nodes
+write_table(cent, "centrality_all"); add_case("centrality_all", 'calCentr(netCoin(nodes, links), "all")', "centrality_all")
+write_table(netCoin:::calCentr(netCoin(net_nodes, net_links, showArrows = TRUE), c("degree", "closeness"))$nodes, "centrality_directed")
+add_case("centrality_directed", 'calCentr(netCoin(nodes, links, showArrows = TRUE), c("degree","closeness"))', "centrality_directed")
+pj <- netCoin(net_nodes, net_links, main = "Pajek test", showArrows = TRUE)
+pjf <- file.path(dir_out, "pajek_basic.net"); savePajek(pj, pjf, arcs = "weight", edges = c("weight"))
+pjp <- file.path(dir_out, "pajek_project.paj"); savePajek(pj, file.path(dir_out, "pajek_project.net"), arcs = "weight", partitions = c("group", "kind"), vectors = "size")
+file.rename(file.path(dir_out, "pajek_basic.net"), file.path(dir_out, "pajek_basic.txt"))
+file.rename(pjp, file.path(dir_out, "pajek_project.txt"))
+add_case("pajek", "savePajek(...)", c("pajek_basic", "pajek_project"))
+
+# circle and grid layouts
+write_matrix_plain <- function(m, name) { df <- as.data.frame(m); df <- cbind(.row = rownames(m), df); write_csv(df, name, dir_out) }
+write_matrix_plain(layoutCircle(net_nodes, name = "name"), "layoutcircle_all")
+write_matrix_plain(layoutCircle(net_nodes, name = "name", deg = 90), "layoutcircle_deg")
+write_matrix_plain(layoutCircle(net_nodes, nodes = c("c", "a", "e", "zz"), name = "name"), "layoutcircle_subset")
+write_matrix_plain(layoutCircle(net_nodes, nodes = "b", name = "name"), "layoutcircle_one")
+gstrings <- c(simple = "a,b.c.d,e,f", gaps = "a;b,c.d,e.f", bottom = "a,b,.c.d,e", one = "a,b,c,d", byrow = "a,b,c.d,e.f,g")
+write_json(as.list(gstrings), file.path(dir_out, "layoutgrid_strings.json"), auto_unbox = TRUE)
+for (g in names(gstrings)) write_matrix_plain(layoutGrid(net_nodes, gstrings[[g]], name = "name", byrow = (g == "byrow")), paste0("layoutgrid_", g))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

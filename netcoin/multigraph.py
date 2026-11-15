@@ -14,6 +14,8 @@ from copy import deepcopy
 from shutil import copytree
 from typing import Sequence
 
+import pandas as pd
+
 from .core import netCoin
 from .network import netCreate
 from .utils import createHTML
@@ -98,7 +100,7 @@ def _chr(value) -> str:
 
 
 def evolvingNetwork(graphs: dict, frame: int = 0, speed: float = 50, loop: bool = False,
-                    lineplots: Sequence[str] | None = None) -> dict:
+                    lineplots: Sequence[str] | None = None) -> netCoin:
   """Merge networks that share nodes into one that evolves, one frame per graph.
 
   Links get a ``_frame_`` column. A node attribute that changes between frames
@@ -123,14 +125,15 @@ def evolvingNetwork(graphs: dict, frame: int = 0, speed: float = 50, loop: bool 
   name = first.options["nodeName"]
   if any(g.options["nodeName"] != name for g in multi):
     raise ValueError("name: all graphs must have the same name")
-  node_cols = first.getNodeAttr()
-  link_cols = first.getLinkAttr()
+  node_cols = list(first.nodes.columns)
   for g in multi:
-    if g.lcount() == 0:
+    if g.links is None:
       raise ValueError("links: all graphs must have links")
-    if set(g.getNodeAttr()) != set(node_cols):
+    if set(g.nodes.columns) != set(node_cols):
       raise ValueError("nodes: all graphs must have the same node columns")
-    if set(g.getLinkAttr()) != set(link_cols):
+  link_cols = list(first.links.columns)
+  for g in multi:
+    if set(g.links.columns) != set(link_cols):
       raise ValueError("links: all graphs must have the same link columns")
   source, target = first.options["linkSource"], first.options["linkTarget"]
   for g in multi:
@@ -146,21 +149,20 @@ def evolvingNetwork(graphs: dict, frame: int = 0, speed: float = 50, loop: bool 
       continue
     merged = []
     for n in node_names:
-      values = [g.nodes[col][pos[n]] if n in pos else None for g, pos in zip(multi, position)]
+      values = [g.nodes[col].iloc[pos[n]] if n in pos else None for g, pos in zip(multi, position)]
+      values = [None if (isinstance(v, float) and v != v) else v for v in values]
       distinct = list(dict.fromkeys(values))
       merged.append(distinct[0] if len(distinct) == 1 else "|".join(_chr(v) for v in values))
     nodes[col] = merged
-  index = {n: i for i, n in enumerate(node_names)}
+  nodes = pd.DataFrame(nodes)
 
   # links, with the frame they belong to
-  links = {c: [] for c in link_cols + ["_frame_"]}
+  parts = []
   for i, g in enumerate(multi):
-    for c in link_cols:
-      values = g.links[c]
-      if c in (source, target):
-        values = [index[v] for v in values]
-      links[c].extend(values)
-    links["_frame_"].extend([i] * g.lcount())
+    part = g.links[link_cols].copy()
+    part["_frame_"] = i
+    parts.append(part)
+  links = pd.concat(parts, ignore_index=True)
 
   options = deepcopy(first.options)
   for item in ("main", "note", "repulsion", "distance", "zoom"):
@@ -178,16 +180,14 @@ def evolvingNetwork(graphs: dict, frame: int = 0, speed: float = 50, loop: bool 
     if keys:
       options["lineplotsKeys"] = keys
 
-  net = {"links": links, "nodes": nodes, "nodeAttrNames": list(node_cols),
-         "linkAttrNames": link_cols + ["_frame_"], "options": options}
-
-  tree = []
+  trees = []
   for i, g in enumerate(multi):
-    for pair in getattr(g, "tree", None) or []:
-      tree.append(list(pair) + [i])
-  if tree:
-    net["tree"] = tree
-  return net
+    if g.tree is not None:
+      part = g.tree.copy()
+      part["_frame_"] = i
+      trees.append(part)
+  tree = pd.concat(trees, ignore_index=True) if trees else None
+  return netCoin._from_parts(nodes, links, options, tree)
 
 
 def frameGraph(graphs: dict, directory: str, frame=0, speed=50, loop=False, lineplots=None):

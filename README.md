@@ -121,6 +121,39 @@ net = net.add(color="%")                          # a copy with some arguments c
 net.plot()                                        # opens it in the browser
 ```
 
+### Drawing options
+
+`netCoin` has the arguments of the R function, in `snake_case`; the tables are DataFrames
+(`net.nodes`, `net.links`) and `net.options` is what the page reads.
+
+```python
+net = netCoin(nodes, links, name="name", label="label", size="size",
+              color="group", shape="kind",           # a column, one value, or one per node
+              lwidth="weight", lcolor="weight",
+              layout="fruchterman_reingold",         # or a matrix, or several planes in a dict
+              community="walktrap",                  # detected with igraph (pip install netcoin[igraph])
+              node_filter="size > 2", degree_filter=2,
+              centrality=["closeness", "betweenness"],
+              controls=[1, 2, 3, 4, 5], show_arrows=True, main="My network")
+net.plot()
+```
+
+The names of earlier versions (`showArrows`, `defaultColor`, `nodeFilter`, `fromMatrix`...) still work
+but warn: use `show_arrows`, `default_color`, `node_filter`, `from_matrix`... `orderA`/`orderD` are
+now `sort`/`decreasing`.
+
+With python-igraph you can also go back and forth and save for other programs:
+
+```python
+from netcoin import to_igraph, from_igraph, save_pajek, save_graphml, layout_circle, layout_grid
+
+graph = to_igraph(net)                      # an igraph.Graph with the node and link attributes
+net2 = from_igraph(graph)                   # and back
+save_pajek(net, "network.net", arcs=["weight"], partitions=["group"])
+save_graphml(net, "network.graphml")
+coordinates = layout_circle(net.nodes, name="name")      # also layout_grid("a,b.c.d")
+```
+
 ### Several graphs in one page
 
 ```python
@@ -165,6 +198,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Bar charts of coincidences        | `bar_coin(...)`                            |
 | Timelines of periods and events   | `time_coin(...)`, `inc_time(...)`, `mobile_edges(...)` |
 | Pie charts of coincidences        | `pie_coin(...)`                            |
+| Layouts, igraph, Pajek, GraphML   | `layout_circle`, `layout_grid`, `to_igraph`, `from_igraph`, `save_pajek`, `save_graphml` |
 | Multi-graph visualisations        | `multigraphCreate(...)` (default, parallel, frame) |
 | Coincidences (`Coin` object)      | `coin(...)`                                |
 | Similarity measures (Jaccard, …)  | `sim(...)`                                 |
