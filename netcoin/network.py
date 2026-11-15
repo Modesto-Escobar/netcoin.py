@@ -107,9 +107,14 @@ def netWrapper(net,directory):
 
 def netCreate(graph, directory):
   #create html wrapper for network graph
-  language = getLanguageScript(graph)
-  if not language:
-    language = "en.js"
+  language = getLanguageScript(graph) or "en.js"
 
-  createHTML(directory, ["reset.css","styles.css","d3.min.js","jspdf.min.js","jszip.min.js","iro.min.js","functions.js",language,"colorScales.js","network.js"],lambda: netWrapper(graph,directory))
+  styles = ["reset.css", "styles.css"]
+  scripts = ["d3.min.js", "jspdf.min.js", "jszip.min.js", "iro.min.js"]
+  options = graph.options if hasattr(graph, "options") else graph.get("options", {})
+  if options.get("statistics"):
+    styles.append("statistics.css")
+    scripts += ["stdlib.bundle.js", "statistics_" + language]
+  scripts += ["images.js", "colorScales.js", "functions.js", language, "network.js"]
 
+  createHTML(directory, styles, scripts, lambda: netWrapper(graph, directory))

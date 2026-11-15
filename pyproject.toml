@@ -37,7 +37,7 @@ packages = ["netcoin"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-netcoin = ["www/*"]
+netcoin = ["www/*", "www/*/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

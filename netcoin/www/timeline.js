@@ -1,15 +1,27 @@
 function timeline(json){
 
-  var nodes = json.nodes,
+  var periods = json.periods,
       options = json.options,
 
       defaultShape = "Circle", // node shape by default
       symbolTypes = ["Circle","Square","Diamond","Triangle","Cross","Star","Wye"], // list of available shapes
       infoLeft = 0, // global variable for panel left position
       selectedGroups, // temporarily selected in checkboxes
-      filter = false; // global filter
+      itemsFiltered = false; // global filter
+
+  var renderTime = function(t){
+    return formatter(t);
+  }
+  if(options.POSIXct){
+    renderTime = function(t){
+      return (new Date(t*1000)).toUTCString();
+    }
+  }
 
   var body = d3.select("body");
+
+  var infoPanel = displayInfoPanel();
+  body.call(infoPanel);
 
   if(options.cex)
     body.style("font-size", 10*options.cex + "px")
@@ -30,9 +42,9 @@ function timeline(json){
       applyCheckBoxes();
       return;
     }
-    if(d3.event.ctrlKey && key == "x"){
+    if((d3.event.ctrlKey || d3.event.metaKey) && key == "x"){
       body.selectAll(".tooltip.fixed").remove();
-      body.select("div.infopanel div.close-button").dispatch("click");
+      infoPanel.close();
       return;
     }
   })
@@ -40,29 +52,27 @@ function timeline(json){
   // default linear scale for events
   options.colorScaleeventColor = "WhBu";
 
-  // sort nodes by start
-  nodes.sort(function(nodea, nodeb){
-    var a = nodea[options.start],
-        b = nodeb[options.start];
-    return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
+  // sort periods by start
+  periods.sort(function(nodea, nodeb){
+    return sortAsc(nodea[options.start],nodeb[options.start]);
   });
 
   // prepare events
   if(json.events){
     var events = {};
     json.events.forEach(function(d,i){
-      if(typeof events[d[options.eventParent]] == "undefined")
-        events[d[options.eventParent]] = [];
-      events[d[options.eventParent]].push(i);
+      if(typeof events[d[options.eventPeriod]] == "undefined")
+        events[d[options.eventPeriod]] = [];
+      events[d[options.eventPeriod]].push(i);
     })
-    nodes.forEach(function(node){
+    periods.forEach(function(node){
       if(events.hasOwnProperty(node[options.name]))
         node['_events_'] = events[node[options.name]].map(function(i){ return json.events[i]; });
     });
   }
 
   // split multivariables
-  nodes.forEach(function(d){
+  periods.forEach(function(d){
       for(var p in d) {
         if(p!=options.name){
           if(typeof d[p] == "string" && d[p].indexOf("|")!=-1){
@@ -73,10 +83,16 @@ function timeline(json){
   });
 
   // top bar
-  var topBar = body.append("div")
-        .attr("class","topbar")
+  var topBar = displayTopBar().fixed(true);
+  if(options.multigraph){
+    topBar.multigraph(options.multigraph);
+  }
+  if(options.multipages){
+    topBar.goback(true);
+  }
+  body.call(topBar);
 
-  topBar.call(iconButton()
+  topBar.addIcon(iconButton()
         .alt("pdf")
         .width(24)
         .height(24)
@@ -84,7 +100,7 @@ function timeline(json){
         .title(texts.pdfexport)
         .job(svg2pdf));
 
-  topBar.call(iconButton()
+  topBar.addIcon(iconButton()
         .alt("svg")
         .width(24)
         .height(24)
@@ -92,43 +108,35 @@ function timeline(json){
         .title(texts.svgexport)
         .job(svgDownload));
 
-  // multigraph
-  if(typeof multiGraph != 'undefined'){
-      topBar.append("h3").text(texts.graph + ":")
-      multiGraph.graphSelect(topBar);
-  }
-
   // groups selection in topBar
-  topBarVisual(topBar,"Group","group",getOptions(nodes));
+  topBar.addBox(function(box){
+    topBarVisual(box,"Group","group",getOptions(periods));
+  })
 
   if(json.events){
     // event colors in topBar
-    topBarVisual(topBar,"Color","eventColor",getOptions(json.events),displayPicker);
+    topBar.addBox(function(box){
+      topBarVisual(box,"Color","eventColor",getOptions(json.events),displayPicker);
+    });
     // event shapes in topBar
-    topBarVisual(topBar,"Shape","eventShape",getOptions(json.events));
+    topBar.addBox(function(box){
+      topBarVisual(box,"Shape","eventShape",getOptions(json.events));
+    });
   }
 
   // node filter in topBar
   var topFilterInst = topFilter()
-    .data(nodes)
-    .attr(options.name)
-    .displayGraph(function(f){
-      if(filter && f){
-        f = f.filter(function(d){
-          return filter.indexOf(d)!=-1;
-        })
-      }
-      filter = f;
-      displayGraph();
-    });
-  topBar.call(topFilterInst);
+    .data(periods)
+    .datanames(getOptions(periods))
+    .displayGraph(displayGraph);
 
-  topBar.append("span").style("padding","0 10px");
+  topBar.addBox(topFilterInst);
 
-  // expand/collpse bars displaying
-  topBar.append("h3")
+  // expand/collapse bars displaying
+  topBar.addBox(function(box){
+    box.append("h3")
     .text(texts.expand)
-  topBar.append("button")
+    box.append("button")
     .attr("class","switch-button")
     .classed("active",!options.collapse)
     .on("click",function(){
@@ -136,11 +144,11 @@ function timeline(json){
       d3.select(this).classed("active",!options.collapse);
       displayGraph();
     })
-
-  topBar.append("span").style("padding","0 10px");
+  });
 
   // reset button
-  topBar.append("button")
+  topBar.addBox(function(box){
+      box.append("button")
         .attr("class","primary reset")
         .text(texts.reset)
         .on("click",function(){
@@ -148,6 +156,7 @@ function timeline(json){
         })
         .append("title")
           .text("F5")
+  });
 
   var header = body.append("div")
         .attr("class","header")
@@ -167,7 +176,7 @@ function timeline(json){
     ".mini text { font-size:  90%; }"+
     ".mini .item { fill-opacity: .7; stroke-width: 6;  }"+
     ".brush .selection { fill: dodgerblue; }"+
-    ".axis path, .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }"+
+    ".axis path, .axis line { fill: none; stroke: "+basicColors.black+"; shape-rendering: crispEdges; }"+
     ".main text { font-size:  120%; }")
 
   displayGraph();
@@ -177,7 +186,10 @@ function timeline(json){
         .attr("class","note")
         .html(options.note)
 
-  function displayGraph(){
+  function displayGraph(newfilter){
+
+    if(typeof newfilter != "undefined")
+      itemsFiltered = newfilter;
 
     var plot = body.select("div.plot")
 
@@ -190,26 +202,25 @@ function timeline(json){
 
     plot.on("click",function(){
       if(d3.event.shiftKey){
-        filter = false;
-        displayGraph();
+        topFilterInst.removeFilter();
       }
     });
 
-    var currentYear = new Date().getFullYear(),
+    var currentTime = options.POSIXct ? Math.floor(Date.now() / 1000) : new Date().getFullYear(),
         getEnd = function(y){
-          return y === null ? currentYear : y;
+          return y === null ? currentTime : y;
         };
 
-    var items = (filter ? nodes.filter(function(d){ return filter.indexOf(d[options.name])!=-1; }) : nodes).filter(function(d){ return d[options.group]!==null; });
+    var items = (itemsFiltered ? itemsFiltered : periods).filter(function(d){ return d[options.group]!==null; });
 
-    var lanes = options.group?d3.set(items.map(function(d){ return String(d[options.group]); })).values().sort():[""],
+    var lanes = options.group?d3.set(items.map(function(d){ return String(d[options.group]); })).values().sort(sortAsc):[""],
         laneLength = lanes.length,
         timeBegin = d3.min(items,function(d){ return d[options.start]; }),
         timeEnd = d3.max(items,function(d){ return getEnd(d[options.end]); });
 
     if(!options.text){
       items.forEach(function(d){
-        d["text"] = d[options.name]+" </br>"+d[options.start]+((d[options.end]===null)?"":" - "+d[options.end]);
+        d["text"] = d[options.name]+" </br>"+renderTime(d[options.start])+((d[options.end]===null)?"":" - "+renderTime(d[options.end]));
       })
       options.text = "text";
     }
@@ -227,7 +238,7 @@ function timeline(json){
       }else{
         var eventColorScale = d3.scaleOrdinal()
           .range(categoryColors)
-          .domain(d3.map(json.events,function(d){ return d[options.eventColor]; }).keys().sort())
+          .domain(d3.map(json.events,function(d){ return d[options.eventColor]; }).keys().sort(sortAsc))
       }
     }
 
@@ -285,7 +296,7 @@ function timeline(json){
             })
           }
         });
-        d3.set(values).values().sort().reverse().forEach(function(d){
+        d3.set(values).values().sort(sortAsc).reverse().forEach(function(d){
           var g = lcolor.append("g")
           g.append("rect")
             .attr("x",0)
@@ -316,7 +327,7 @@ function timeline(json){
             })
           }
         });
-        d3.set(values).values().sort().reverse().forEach(function(d){
+        d3.set(values).values().sort(sortAsc).reverse().forEach(function(d){
           var g = lshape.append("g")
           g.append("path")
             .attr("transform","translate(0,-5)")
@@ -340,7 +351,7 @@ function timeline(json){
     if(options.group){
       color = d3.scaleOrdinal()
         .range(categoryColors)
-        .domain(nodes.map(function(n){ return n[options.group]; }).sort());
+        .domain(periods.map(function(n){ return n[options.group]; }).sort(sortAsc));
 
       getMiniY = function(d){ return y2((lanes.indexOf(String(d[options.group]))) + 0.5) - 5; }
     }else{
@@ -376,7 +387,7 @@ function timeline(json){
 
     var gLaneTexts = mini.append("g");
 
-    var showCheckControls = !filter && laneLength>1;
+    var showCheckControls = !itemsFiltered && laneLength>1;
 
     headerButtons.selectAll("*").remove();
 
@@ -385,13 +396,12 @@ function timeline(json){
       enableFilterButton(false);
 
       displaySeparator(mini,margin[3],y);
-    }else if(filter){
+    }else if(itemsFiltered){
       headerButtons.append("div").html("&nbsp;")
       headerButtons.append("div")
         .attr("class","goback")
         .on("click",function(){
-          filter = false;
-          displayGraph();
+          topFilterInst.removeFilter();
         })
     }
 
@@ -505,7 +515,7 @@ function timeline(json){
     }
 
     //mini axis
-    var xAxis = d3.axisBottom(x).tickFormat(formatter);
+    var xAxis = d3.axisBottom(x).tickFormat(renderTime);
 
     mini.append("g")
       .attr("class", "x axis")
@@ -530,7 +540,7 @@ function timeline(json){
       .attr("height", margin[2]+10);
 
     timeHeader.append("rect")
-      .style("fill","#fff")
+      .style("fill",basicColors.white)
       .attr("x",margin[3])
       .attr("width", w)
       .attr("height", margin[2]+10);
@@ -616,53 +626,52 @@ function timeline(json){
 
     // dotted vertical guide
     var rect = plot.node().getBoundingClientRect(),
-        yearGuideTop = rect.top
+        timeGuideTop = rect.top
           + topSVG.node().clientHeight
           + timeHeader.node().clientHeight
           + 3,
-        yearGuide = plot.append("div")
-      .attr("class","year-guide")
+        timeGuide = plot.append("div")
+      .attr("class","time-guide")
       .style("position","absolute")
-      .style("top",yearGuideTop+"px")
+      .style("top",timeGuideTop+"px")
       .style("left",((w/2)+margin[3])+"px")
       .style("width",0)
       .style("height",0)
-      .style("border-left","dashed 1px #000")
+      .style("border-left","dashed 1px "+basicColors.black)
       .style("z-index",-1);
 
-    var pYear = plot.append("p")
-      .attr("class","year")
-      .style("background-color","#fff")
+    var pTime = plot.append("p")
+      .attr("class","time")
+      .style("background-color",basicColors.white)
       .style("position","absolute")
-      .style("top",yearGuideTop+"px")
+      .style("top",timeGuideTop+"px")
       .style("margin-left","-16px")
-      .style("padding","2px 0")
+      .style("padding","2px 4px")
       .style("border-radius","0 0 5px 5px")
-      .style("width","32px")
       .style("text-align","center");
 
     body.on("mousemove",function(){
       var coords = d3.mouse(body.node());
-      if(coords[1]>yearGuideTop && coords[0]>margin[3] && coords[0]<(margin[3]+w)){
-        yearGuide.style("left",coords[0]+"px");
-        pYear.style("left",coords[0]+"px");
-        var year = parseInt(x1.invert(coords[0]-margin[3]));
-        pYear.text(year);
+      if(coords[1]>timeGuideTop && coords[0]>margin[3] && coords[0]<(margin[3]+w)){
+        timeGuide.style("left",coords[0]+"px");
+        pTime.style("left",coords[0]+"px");
+        var time = parseInt(x1.invert(coords[0]-margin[3]));
+        pTime.text(renderTime(time));
       }
     })
 
     window.onscroll = function(){
-      if(window.pageYOffset > (yearGuideTop - topBar.node().offsetHeight)){
+      if(window.pageYOffset > (timeGuideTop - topBar.height())){
         timeHeader.style("position","fixed")
-          .style("top",(topBar.node().offsetHeight)+"px")
+          .style("top",(topBar.height())+"px")
           .style("left",0)
-        pYear.style("position","fixed")
-          .style("top",(topBar.node().offsetHeight + margin[2]+10)+"px")
+        pTime.style("position","fixed")
+          .style("top",(topBar.height() + margin[2]+10)+"px")
       }else{
         timeHeader.style("position",null)
           .style("top",null)
-        pYear.style("position","absolute")
-          .style("top",yearGuideTop+"px")
+        pTime.style("position","absolute")
+          .style("top",timeGuideTop+"px")
       }
     }
 
@@ -675,10 +684,10 @@ function timeline(json){
 
     function keyflip(){
       if(!d3.event.button && (d3.event.ctrlKey || d3.event.metaKey)){
-        if(window.pageYOffset>yearGuideTop){
+        if(window.pageYOffset>timeGuideTop){
           zoomArea.style("top",margin[2]+"px");
         }else{
-          zoomArea.style("top",(yearGuideTop-window.pageYOffset)+"px");
+          zoomArea.style("top",(timeGuideTop-window.pageYOffset)+"px");
         }
         zoomArea.style("display","block");
       }else{
@@ -700,7 +709,7 @@ function timeline(json){
       x1.domain([minExtent, maxExtent]);
 
       if(minExtent < maxExtent){
-        var x1Axis = d3.axisTop(x1).tickFormat(formatter);
+        var x1Axis = d3.axisTop(x1).tickFormat(renderTime);
         timeHeader.select("g").call(x1Axis);
       }else{
         timeHeader.select("g").selectAll("*").remove();
@@ -737,9 +746,9 @@ function timeline(json){
           rectsEnter.append("text")
             .attr("y", -4)
 
-          rectsEnter.selectAll("rect, text").on("click.infopanel",function(d){ displayInfoPanel(d[options.info]); });
+          rectsEnter.selectAll("rect, text").on("click.infopanel",function(d){ infoPanel.changeInfo(d[options.info]); });
 
-          tooltipActions(rectsEnter.selectAll("rect, text"),options.text);
+          tooltipActions(rectsEnter.selectAll("rect, text"),options.text,color(d));
 
           rects.exit().remove();
 
@@ -762,7 +771,7 @@ function timeline(json){
             else
               self.attr("text-anchor",null);
 
-            if(options.eventColor && options.eventColor==options.eventParent)
+            if(options.eventColor && options.eventColor==options.eventPeriod)
               self.style("fill",eventColorScale(d[options.name]));
           });
 
@@ -770,13 +779,14 @@ function timeline(json){
             if(!d['_events_'])
               return;
 
-            var points = d3.select(this).selectAll(".event").data(d['_events_'],function(dd){ return dd[options.eventChild]; });
+            var points = d3.select(this).selectAll(".event").data(d['_events_'],function(dd){ return dd[options.eventNames]; });
 
             var pointsEnter = points.enter()
                   .append("path")
                   .attr("class","event");
 
-            pointsEnter.on("click.infopanel",function(d){ displayInfoPanel(d[options.info]); });
+            pointsEnter.on("click.infopanel",function(d){ 
+              infoPanel.changeInfo(d[options.info]); });
 
             tooltipActions(pointsEnter,function(d){
               var html = "";
@@ -785,9 +795,9 @@ function timeline(json){
               }else{
                 for(var s in d){
                   if(d.hasOwnProperty(s)){
-                    if(s==options.eventParent){
+                    if(s==options.eventPeriod){
                       continue;
-                    }else if(s==options.eventChild){
+                    }else if(s==options.eventNames){
                       html = d[s]+"<br>"+html;
                     }else if(d[s]){
                       html += s+": "+d[s]+"<br>";
@@ -830,7 +840,7 @@ function timeline(json){
           rectsUpdate.attr("transform",function(d){
             var BBox = this.getBBox(),
                 i = 0,
-                nlines = Math.ceil(BBox.height/lineheight)+(d['_events_']?1:0);
+                nlines = Math.ceil(BBox.height/lineheight);
                 j = 0,
                 collision = true;
             while(collision){
@@ -859,21 +869,18 @@ function timeline(json){
       });
 
       var guideHeight = (parseInt(plot.style("height")) - parseInt(plot.select(".plot>svg:first-child").style("height"))) + "px";
-      yearGuide.style("height",guideHeight);
+      timeGuide.style("height",guideHeight);
 
     }
   }
 
   function applyCheckBoxes(){
     if(selectedGroups && selectedGroups.size()){
-      filter = nodes
-        .filter(function(d){ return selectedGroups.has(d[options.group]); })
-        .map(function(d){ return d[options.name]; });
-      displayGraph();
+      topFilterInst.newFilter(options.group,selectedGroups.values());
     }
   }
 
-  function tooltipActions(sel,text){
+  function tooltipActions(sel,text,color){
     sel
       .on("click.tooltip",function(d){
         d3.event.stopPropagation();
@@ -934,22 +941,40 @@ function timeline(json){
         }else if(typeof text == 'function'){
           html = text(d);
         }
-        if(html)
+        if(html){
           tip.style("display","block").html(html);
+          if(color){
+            tooltipTemplateAutoColor(tooltip,color);
+          }
+        }
     }
 
     function tooltipCoords(tip){
-        var coor = [0, 0];
-        coor = d3.mouse(body.node());
-        tip.style("top",(coor[1]+20)+"px")
-           .style("left",(coor[0]+20)+"px")
+        var coor = d3.mouse(document.body),
+            bodyrect = document.body.getBoundingClientRect(),
+            width = bodyrect.width,
+            top = window.scrollY + bodyrect.top + coor[1],
+            left = coor[0];
+        if(left > width/2){
+          left = left - tip.node().offsetWidth - 20;
+        }else{
+          left = left + 20;
+        }
+        top = top + 20;
+        var offsetY = (top + tip.node().offsetHeight) - (window.scrollY + bodyrect.bottom);
+        if(offsetY > 0){
+          top = top - offsetY;
+        }
+        tip.style("top",top+"px")
+           .style("left",left+"px")
     }
   }
 
-  function topBarVisual(sel, visual, option, opt, picker){
-    sel.append("h3").text(texts[visual] + ":")
+  function topBarVisual(div, visual, option, opt, picker){
 
-    var visualSelect = sel.append("div")
+    div.append("h3").text(texts[visual] + ":")
+
+    var visualSelect = div.append("div")
       .attr("class","select-wrapper")
     .append("select")
     .on("change",function(){
@@ -968,59 +993,6 @@ function timeline(json){
         .property("value",String)
         .text(String)
         .property("selected",function(d){ return d==options[option]?true:null; })
-  }
-
-  function displayInfoPanel(info){
-    if(!options.info)
-      return;
-
-    var docSize = viewport(),
-        div = body.select("div.infopanel"),
-        prevPanel = !div.empty();
-
-    if(info){
-      div.remove();
-      if(!infoLeft){
-        infoLeft = docSize.width * 2/3;
-      }
-      div = body.append("div")
-          .attr("class","infopanel");
-      var infoHeight = docSize.height
-      - parseInt(div.style("top"))
-      - parseInt(div.style("border-top-width"))
-      - parseInt(div.style("border-bottom-width"))
-      - parseInt(div.style("padding-top"))
-      - parseInt(div.style("padding-bottom"))
-      - 10;
-      div.style("position","fixed")
-         .style("height",infoHeight+"px")
-         .style("left",docSize.width+"px").transition().duration(prevPanel?0:500)
-           .style("left",infoLeft+"px")
-
-      div.append("div")
-      .attr("class","drag")
-      .call(d3.drag()
-        .on("drag", function() {
-          var left = d3.mouse(body.node())[0]-parseInt(div.style("border-left-width"));
-          if(left>(docSize.width*2/4) && left<(docSize.width*3/4)){
-            infoLeft = left;
-            div.style("left",infoLeft+"px");
-          }
-        })
-      )
-      div.append("div")
-          .attr("class","close-button")
-          .on("click", function(){
-            div.transition().duration(500)
-              .style("left",docSize.width+"px")
-              .on("end",function(){
-                div.remove();
-              })
-          });
-      div.append("div").append("div").html(info);
-    }else{
-      div.select("div.infopanel > div.close-button").dispatch("click");
-    }
   }
 
   function svgDownload(){
@@ -1205,8 +1177,6 @@ function svg2pdf(){
 
 } // timeline function end
 
-if(typeof multiGraph == 'undefined'){
-  window.onload = function(){
-    timeline(JSON.parse(d3.select("#data").text()));
-  };
-}
+window.onload = function(){
+  timeline(JSON.parse(d3.select("#data").text()));
+};
