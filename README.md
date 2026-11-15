@@ -156,6 +156,18 @@ evolving = d_net_corr(cars, factorial="pc", sequence=[0.3, 0.5, 0.7, 0.9],
                       directory="corr_evolving")
 ```
 
+### Log-linear associations
+
+`log_coin` fits a log-linear model to the table of several categorical variables and draws the
+categories (nodes sized by their main effect) joined by the interactions that are significant.
+The note of the graph reports the fit of the model (L2, degrees of freedom and p).
+
+```python
+from netcoin import log_coin
+
+net = log_coin(survey, ["gender", "age", "works"], pmax=0.05, frequency=True, percentage=True)
+```
+
 ### Drawing options
 
 `netCoin` has the arguments of the R function, in `snake_case`; the tables are DataFrames
@@ -243,6 +255,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
 | Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
 | Networks from a survey, CoWeb     | `sur_coin(...)`, `cob_coin(...)`           |
+| Log-linear associations           | `log_coin(...)`                            |
 | Networks of correlations          | `net_corr(...)`, `d_net_corr(...)`, `layout_fact(...)` |
 | Layouts from coincidences         | `layout_mca(...)`, `layout_pca(...)`       |
 

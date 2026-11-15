@@ -714,5 +714,54 @@ nc_case("d_all", "d_netCorr(blocks, components = FALSE, sequence = seq(.3, .9, .
 nc_case("d_back", "d_netCorr(blocks, backcomponents = TRUE, sequence = seq(.2, 1, .05), textFilter = c(.5, .1))",
         d_netCorr(blocks, backcomponents = TRUE, sequence = dn_seq, textFilter = c(.5, .1)))
 
+# ------------------------------------------------------------- logCoin ----
+set.seed(7)
+nl <- 320
+lg <- data.frame(
+  A = sample(c("a1", "a2", "a3"), nl, TRUE, c(.5, .3, .2)),
+  B = sample(c("b1", "b2"), nl, TRUE),
+  C = sample(c("c1", "c2"), nl, TRUE, c(.7, .3)),
+  D = sample(c("d1", "d2", "d3"), nl, TRUE),
+  E = sample(c("e1", "e2"), nl, TRUE),
+  N = sample(1:3, nl, TRUE),
+  W = round(runif(nl, .5, 2), 2),
+  stringsAsFactors = FALSE)
+lg$B[lg$A == "a1" & runif(nl) < .5] <- "b1"                        # some association
+lg$C[lg$B == "b2" & runif(nl) < .4] <- "c2"
+lg$E[lg$D == "d3" & runif(nl) < .6] <- "e2"
+lg$A[c(3, 50)] <- NA; lg$E[c(10, 11, 200)] <- NA
+names(lg)[names(lg) == "D"] <- "D var"
+write_csv(lg, "log_cat5", dir_in)
+
+lc_case <- function(id, call_txt, expr) {
+  tryCatch(net_case(paste0("lc_", id), call_txt, expr),
+           error = function(e) message("logCoin case ", id, " FAILED: ", conditionMessage(e)))
+}
+vars3l <- c("Gender", "Age", "Social participation")
+lc_case("default", 'logCoin(ess, c("Gender","Age","Social participation"))', logCoin(ess_w, vars3l))
+lc_case("twotails", 'logCoin(ess, c("Gender","Age","Political participation"), frequency = TRUE, percentage = TRUE, twotails = TRUE, pmax = .1)',
+        logCoin(ess_w, c("Gender", "Age", "Political participation"), frequency = TRUE, percentage = TRUE, twotails = TRUE, pmax = .1))
+lc_case("order3", 'logCoin(ess, c("Age","Social participation","Political participation","Gender"), exogenous = "Gender", order = 3, pmax = .2)',
+        logCoin(ess_w, c("Age", "Social participation", "Political participation", "Gender"), exogenous = "Gender", order = 3, pmax = .2))
+lc_case("order3_freq", 'logCoin(ess, 4 variables, exogenous = "Gender", order = 3, pmax = .2, frequency = TRUE, percentage = TRUE)',
+        logCoin(ess_w, c("Age", "Social participation", "Political participation", "Gender"), exogenous = "Gender", order = 3, pmax = .2,
+                frequency = TRUE, percentage = TRUE))
+lc_case("nofirst", 'logCoin(ess, vars3, noFirstCat = "Gender")', logCoin(ess_w, vars3l, noFirstCat = "Gender"))
+lc_case("nofirst_two", 'logCoin(ess, 4 variables, noFirstCat = c("Gender","Age"), twotails = TRUE)',
+        logCoin(ess_w, c("Gender", "Age", "Social participation", "Political participation"), noFirstCat = c("Gender", "Age"), twotails = TRUE))
+lc_case("weight", 'logCoin(ess, c("Gender","Age","Social participation"), weight = "cweight")',
+        logCoin(ess_w, vars3l, weight = "cweight"))
+lc_case("spanish", 'logCoin(ess, vars3, language = "es", frequency = TRUE)', logCoin(ess_w, vars3l, language = "es", frequency = TRUE))
+lc_case("four", 'logCoin(ess, 4 variables, pmax = .1)',
+        logCoin(ess_w, c("Gender", "Age", "Social participation", "Political participation"), pmax = .1))
+lc_case("five", 'logCoin(lg, c("A","B","C","D var","E"), pmax = .1)', logCoin(lg, c("A", "B", "C", "D var", "E"), pmax = .1))
+lc_case("five_two", 'logCoin(lg, c("A","B","C","D var","E"), twotails = TRUE, pmax = .2, frequency = TRUE)',
+        logCoin(lg, c("A", "B", "C", "D var", "E"), twotails = TRUE, pmax = .2, frequency = TRUE))
+lc_case("numeric", 'logCoin(lg, c("N","B","C"), weight = "W", pmax = .3)', logCoin(lg, c("N", "B", "C"), weight = "W", pmax = .3))
+lc_case("exo_two", 'logCoin(lg, c("A","B","C","E"), exogenous = c("A","E"), order = 3, pmax = .3, noFirstCat = "B")',
+        logCoin(lg, c("A", "B", "C", "E"), exogenous = c("A", "E"), order = 3, pmax = .3, noFirstCat = "B"))
+lc_case("options", 'logCoin(ess, vars3, color = "cat", lwidth = "z value", main = "Log-linear", degreeFilter = 0)',
+        logCoin(ess_w, vars3l, color = "cat", lwidth = "z value", main = "Log-linear", degreeFilter = 0))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

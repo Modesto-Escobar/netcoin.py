@@ -1,0 +1,11 @@
+"name","Estimate","label","var","cat","freq","prop","hidden"
+"Age15-29",-0.063,"Age:15-29","Age","15-29",174,0.174523570712136,FALSE
+"Age30-39",-0.097,"Age:30-39","Age","30-39",144,0.144433299899699,TRUE
+"Age40-49",0.04,"Age:40-49","Age","40-49",177,0.17753259779338,FALSE
+"Age50-59",-0.009,"Age:50-59","Age","50-59",154,0.154463390170512,FALSE
+"Age60-69",0.151,"Age:60-69","Age","60-69",189,0.189568706118355,TRUE
+"Age70 and +",-0.022,"Age:70 and +","Age","70 and +",159,0.159478435305918,TRUE
+"GenderFemale",0.044,"Gender:Female","Gender","Female",534,0.535606820461384,FALSE
+"GenderMale",-0.044,"Gender:Male","Gender","Male",463,0.464393179538616,FALSE
+"Political_participationNo",0.476,"Political_participation:No","Political_participation","No",720,0.722166499498496,FALSE
+"Political_participationYes",-0.476,"Political_participation:Yes","Political_participation","Yes",277,0.277833500501505,FALSE

@@ -1,0 +1,11 @@
+"nombre","Estimate","etiqueta","var","cat","freq","hidden"
+"Age15-29",0.075,"Age:15-29","Age","15-29",174,TRUE
+"Age30-39",-0.13,"Age:30-39","Age","30-39",144,TRUE
+"Age40-49",0.059,"Age:40-49","Age","40-49",177,FALSE
+"Age50-59",-0.041,"Age:50-59","Age","50-59",154,FALSE
+"Age60-69",0.105,"Age:60-69","Age","60-69",189,FALSE
+"Age70 and +",-0.068,"Age:70 and +","Age","70 and +",159,FALSE
+"GenderFemale",0.06,"Gender:Female","Gender","Female",534,FALSE
+"GenderMale",-0.06,"Gender:Male","Gender","Male",463,FALSE
+"Social_participationNo",0.2,"Social_participation:No","Social_participation","No",599,FALSE
+"Social_participationYes",-0.2,"Social_participation:Yes","Social_participation","Yes",398,FALSE

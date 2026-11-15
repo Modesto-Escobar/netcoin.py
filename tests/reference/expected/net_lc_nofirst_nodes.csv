@@ -1,0 +1,10 @@
+"Estimate","name","label","var","cat","hidden"
+0.075,"Age15-29","Age:15-29","Age","15-29",TRUE
+-0.13,"Age30-39","Age:30-39","Age","30-39",TRUE
+0.059,"Age40-49","Age:40-49","Age","40-49",TRUE
+-0.041,"Age50-59","Age:50-59","Age","50-59",FALSE
+0.105,"Age60-69","Age:60-69","Age","60-69",FALSE
+-0.068,"Age70 and +","Age:70 and +","Age","70 and +",FALSE
+-0.06,"GenderMale","Gender:Male","Gender","Male",FALSE
+0.2,"Social_participationNo","Social_participation:No","Social_participation","No",FALSE
+-0.2,"Social_participationYes","Social_participation:Yes","Social_participation","Yes",FALSE

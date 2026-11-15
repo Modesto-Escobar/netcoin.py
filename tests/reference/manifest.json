@@ -1008,6 +1008,62 @@
     "net_nc_d_back": {
       "call": "d_netCorr(blocks, backcomponents = TRUE, sequence = seq(.2, 1, .05), textFilter = c(.5, .1))",
       "files": ["net_nc_d_back_nodes", "net_nc_d_back_links"]
+    },
+    "net_lc_default": {
+      "call": "logCoin(ess, c(\"Gender\",\"Age\",\"Social participation\"))",
+      "files": ["net_lc_default_nodes", "net_lc_default_links"]
+    },
+    "net_lc_twotails": {
+      "call": "logCoin(ess, c(\"Gender\",\"Age\",\"Political participation\"), frequency = TRUE, percentage = TRUE, twotails = TRUE, pmax = .1)",
+      "files": ["net_lc_twotails_nodes", "net_lc_twotails_links"]
+    },
+    "net_lc_order3": {
+      "call": "logCoin(ess, c(\"Age\",\"Social participation\",\"Political participation\",\"Gender\"), exogenous = \"Gender\", order = 3, pmax = .2)",
+      "files": ["net_lc_order3_nodes", "net_lc_order3_links"]
+    },
+    "net_lc_order3_freq": {
+      "call": "logCoin(ess, 4 variables, exogenous = \"Gender\", order = 3, pmax = .2, frequency = TRUE, percentage = TRUE)",
+      "files": ["net_lc_order3_freq_nodes", "net_lc_order3_freq_links"]
+    },
+    "net_lc_nofirst": {
+      "call": "logCoin(ess, vars3, noFirstCat = \"Gender\")",
+      "files": ["net_lc_nofirst_nodes", "net_lc_nofirst_links"]
+    },
+    "net_lc_nofirst_two": {
+      "call": "logCoin(ess, 4 variables, noFirstCat = c(\"Gender\",\"Age\"), twotails = TRUE)",
+      "files": ["net_lc_nofirst_two_nodes", "net_lc_nofirst_two_links"]
+    },
+    "net_lc_weight": {
+      "call": "logCoin(ess, c(\"Gender\",\"Age\",\"Social participation\"), weight = \"cweight\")",
+      "files": ["net_lc_weight_nodes", "net_lc_weight_links"]
+    },
+    "net_lc_spanish": {
+      "call": "logCoin(ess, vars3, language = \"es\", frequency = TRUE)",
+      "files": ["net_lc_spanish_nodes", "net_lc_spanish_links"]
+    },
+    "net_lc_four": {
+      "call": "logCoin(ess, 4 variables, pmax = .1)",
+      "files": ["net_lc_four_nodes", "net_lc_four_links"]
+    },
+    "net_lc_five": {
+      "call": "logCoin(lg, c(\"A\",\"B\",\"C\",\"D var\",\"E\"), pmax = .1)",
+      "files": ["net_lc_five_nodes", "net_lc_five_links"]
+    },
+    "net_lc_five_two": {
+      "call": "logCoin(lg, c(\"A\",\"B\",\"C\",\"D var\",\"E\"), twotails = TRUE, pmax = .2, frequency = TRUE)",
+      "files": ["net_lc_five_two_nodes", "net_lc_five_two_links"]
+    },
+    "net_lc_numeric": {
+      "call": "logCoin(lg, c(\"N\",\"B\",\"C\"), weight = \"W\", pmax = .3)",
+      "files": ["net_lc_numeric_nodes", "net_lc_numeric_links"]
+    },
+    "net_lc_exo_two": {
+      "call": "logCoin(lg, c(\"A\",\"B\",\"C\",\"E\"), exogenous = c(\"A\",\"E\"), order = 3, pmax = .3, noFirstCat = \"B\")",
+      "files": ["net_lc_exo_two_nodes", "net_lc_exo_two_links"]
+    },
+    "net_lc_options": {
+      "call": "logCoin(ess, vars3, color = \"cat\", lwidth = \"z value\", main = \"Log-linear\", degreeFilter = 0)",
+      "files": ["net_lc_options_nodes", "net_lc_options_links"]
     }
   }
 }
