@@ -313,12 +313,23 @@ def sur_scat(
         Random starts of the k-means (the best is kept).
     cluster_index : {"ch", "silhouette", "bic"}
         Index that chooses the number of groups: Calinski-Harabasz, silhouette, or BIC of a latent
-        model (not available yet: Calinski-Harabasz is used).
+        model (LPA for ``type="pca"``, LCA for ``"mca"``, lower is better); with ``"auto"`` next to a 1 the BIC
+        also weighs the absence of groups.
     sort_clusters : bool
         Number the groups from left to right on the horizontal axis.
-    layouts, suffix, align_to, clusters, force_execution
-        The planes and groups of ``looking4clusters``, the rotations and the latent models that R
-        adds to the plane are not available yet; they are ignored with a warning.
+    layouts : bool or list of str, optional
+        Planes added to the main one: the reductions of ``looking4clusters`` (``"pca"``, ``"tsne"``,
+        ``"cmds"``, ``"nmf"``, ``"umap"``) and the rotations of the components (``"varimax"``, ``"quartimax"``,
+        ``"equamax"``, only with ``type="pca"``); ``True`` or ``"all"`` asks for all of them.
+    clusters : bool or list of str, optional
+        Groups added to the main ones, by number of groups in ``nclusters``: ``"kmeans"``, ``"pam"``, ``"hclust"``
+        (of ``looking4clusters``, on the active variables as they come) and the latent models ``"lpa"`` /
+        ``"lca"``; ``True`` asks for all of them (the latent model that suits ``type``).
+    suffix, align_to : str, str or int, optional
+        With ``suffix``, every plane added is also shown aligned by Procrustes to the main plane (or to
+        ``align_to``, a plane's name or position), under its name followed by the suffix.
+    force_execution : bool
+        Compute ``pam``, ``hclust`` and ``cmds`` even beyond 5000 cases.
     **netcoin_args
         The rest goes to :class:`netCoin` (``language``, ``main``, ``color``...).
 
@@ -335,10 +346,7 @@ def sur_scat(
     cluster_index = str(cluster_index).lower()
     if cluster_index not in _INDEXES:
         raise ValueError("cluster_index must be one of: " + ", ".join(_INDEXES))
-    for what, value in (("layouts", layouts), ("clusters", clusters), ("suffix", suffix), ("align_to", align_to)):
-        if value not in (None, False):
-            warnings.warn(f"{what} (planes and groups of looking4clusters, rotations and latent models) is not "
-                          "available yet and was ignored")
+    stated_labels = "axes_labels" in args
     data = data.reset_index(drop=True) if isinstance(data.index, pd.RangeIndex) else data.copy()
     variables = list(data.columns) if variables is None else _as_list(variables)
     active = list(variables) if active is None else _as_list(active)
@@ -368,13 +376,15 @@ def sur_scat(
     ks = [int(k) for k in ks]
     keep_all_k = not auto_k or len(ks) > 0
     stated_ks = len(ks) > 0
+    weigh_one = False
     if 1 in ks:
         ks = [k for k in ks if k != 1]
+        weigh_one = auto_k and cluster_index == "bic"        # the BIC can weigh no groups at all
         if not auto_k and not ks:
             no_k = True
             warnings.warn("nclusters=1 makes no groups, as a single group is no clustering: the plane is drawn "
                           "alone, as with nclusters=0")
-        else:
+        elif not weigh_one:
             warnings.warn("nclusters: 1 group left out, as a single group is no clustering")
     if auto_k and not stated_ks:
         ks = list(range(2, 11))
@@ -383,6 +393,18 @@ def sur_scat(
     if not auto_k and not no_k and not ks:
         raise ValueError("nclusters must state at least one number of groups")
     ks = list(dict.fromkeys(reversed(ks)))[::-1]                 # a number stated twice keeps its last place
+    # planes and groups to be added by looking4clusters, checked before any computation
+    from .scatl4c import add_l4c, l4c_clusters, l4c_layout, l4c_run, latent_clusters, rotation_layout
+    l4c_lay, rot_lay, l4c_meth = l4c_layout(layouts), rotation_layout(layouts), l4c_clusters(clusters)
+    if suffix is not None and (not isinstance(suffix, str) or not suffix):
+        raise ValueError("suffix must be a single non-empty string")
+    if suffix is not None and not l4c_lay and not rot_lay:
+        warnings.warn("suffix aligns the planes added by layouts, and none was asked for")
+    if align_to is not None:
+        if isinstance(align_to, bool) or not isinstance(align_to, (str, int, np.integer)):
+            raise ValueError("align_to must be None, or the name or the index of one plane")
+        if suffix is None:
+            warnings.warn("align_to sets the plane suffix aligns to, and no suffix was stated")
     if nfactors < 1:
         raise ValueError("nfactors must be at least 1")
     if nstart < 1:
@@ -459,7 +481,6 @@ def sur_scat(
         ff, eig = mca_rows(m.to_numpy(dtype=float), n_extract, weight)
         ff_names = [f"F{i + 1}" for i in range(n_extract)]
         vm = m.to_numpy(dtype=float)
-        latent_data = m
     else:
         if len(active) < 2:
             raise ValueError("Only one quantitative active variable was found, so type=\"pca\" was chosen "
@@ -473,6 +494,16 @@ def sur_scat(
             raise ValueError(f"only {b.shape[1]} factors can be extracted from {b.shape[1]} active variables")
         ff, eig, vm = pca_scores(b.to_numpy(), weight, n_extract)
         ff_names = [f"PC{i + 1}" for i in range(n_extract)]
+    # the latent model suits the type of analysis, which is only known now: LPA on the quantitative active
+    # variables, LCA on the qualitative ones, both as they come
+    latent_m = latent_clusters(l4c_meth, type)
+    l4c_meth = [m_ for m_ in l4c_meth if m_ in ("kmeans", "pam", "hclust")]
+    if no_k and (l4c_meth or latent_m):
+        warnings.warn("clusters left out: nclusters states no number of groups to make")
+        l4c_meth, latent_m = [], []
+    l4c_data = m if type == "mca" else b.to_numpy(dtype=float)       # the active variables as they come
+    latent_data = b
+    latent_found = None
     n_use = max(1, int((eig[:nfactors] > crit_factors * eig.mean()).sum()))
     fm = ff[:, :n_use]
 
@@ -565,32 +596,52 @@ def sur_scat(
 
     k_index = None
     best = None
-    if auto_k:
-        if cluster_index == "bic":
-            warnings.warn("clusterIndex='bic' needs a latent model, which is not available yet: "
+    k_all = list(ks)                      # the numbers of groups the index weighs: those of the solutions, and 1 for the BIC
+    bic_model = None
+    if auto_k and cluster_index == "bic":
+        from .latent import latent_model, run_latent
+        bic_model = latent_model(type)
+        if weigh_one:
+            k_all = [1] + ks
+        latent_found = run_latent(latent_data, bic_model, k_all, seed=seed)
+        if all(np.isnan(v) for v in latent_found["bic"].values()):
+            warnings.warn(f"the BIC of {bic_model} could not be computed for any number of groups: "
                           "Calinski-Harabasz is used instead")
             cluster_index = "ch"
+            k_all = list(ks)
+    if auto_k:
         em = np.where(np.isfinite(vm), vm, 0.0)
         n = len(em)
         total = ((em - em.mean(axis=0)) ** 2).sum()
+        one_wins = False
 
         def within(labels):
             return sum(((em[labels == g] - em[labels == g].mean(axis=0)) ** 2).sum() for g in np.unique(labels))
 
-        sample = np.sort(rng.choice(n, 2000, replace=False)) if n > 2000 else np.arange(n)
-        values = []
-        for k in ks:
-            if cluster_index == "ch":
-                w = within(fits[k])
-                values.append(((total - w) / (k - 1)) / (w / (n - k)))
-            else:
-                from sklearn.metrics import silhouette_score
-                labels = fits[k][sample]
-                values.append(float(silhouette_score(em[sample], labels)) if len(set(labels)) > 1 else np.nan)
-        best = int(np.nanargmax(values))
-        k_index = pd.DataFrame({"k": ks, cluster_index: values, "optimal": np.arange(len(ks)) == best})
-        k_index.attrs["index"] = "Calinski-Harabasz" if cluster_index == "ch" else "silhouette"
-        log.info('nclusters="auto": %d groups, by %s', ks[best], k_index.attrs["index"])
+        if cluster_index == "bic":        # the lower the better, and defined for a single group as well
+            values = [latent_found["bic"][k] for k in k_all]
+            best_all = int(np.nanargmin(values))
+            one_wins = len(k_all) > len(ks) and best_all == 0
+            best = None if one_wins else best_all - (len(k_all) - len(ks))     # no solution is the main one when 1 wins
+        else:
+            sample = np.sort(rng.choice(n, 2000, replace=False)) if n > 2000 else np.arange(n)
+            values = []
+            for k in ks:
+                if cluster_index == "ch":
+                    w = within(fits[k])
+                    values.append(((total - w) / (k - 1)) / (w / (n - k)))
+                else:
+                    from sklearn.metrics import silhouette_score
+                    labels = fits[k][sample]
+                    values.append(float(silhouette_score(em[sample], labels)) if len(set(labels)) > 1 else np.nan)
+            best = best_all = int(np.nanargmax(values))
+        k_index = pd.DataFrame({"k": k_all, cluster_index: values, "optimal": np.arange(len(k_all)) == best_all})
+        index_name = {"ch": "Calinski-Harabasz", "silhouette": "silhouette", "bic": f"BIC of {bic_model}"}[cluster_index]
+        k_index.attrs["index"] = index_name
+        if one_wins:
+            log.info('nclusters="auto": 1 group (no clustering), by %s; every case takes the same color', index_name)
+        else:
+            log.info('nclusters="auto": %d groups, by %s', ks[best], index_name)
         j_order = list(range(len(ks))) if keep_all_k else [best]
     else:
         j_order = list(range(len(ks)))
@@ -707,7 +758,7 @@ def sur_scat(
 
     args["nodes"] = B
     args["layout"] = pd.DataFrame(cc, columns=cc_names)
-    if "color" not in args and g_cols:
+    if "color" not in args and g_main is not None:
         args["color"] = g_main
     args["frequencies"] = True
     args["show_axes"] = True
@@ -739,6 +790,30 @@ def sur_scat(
             net.scat["cluster_shares"] = shares
         net.clusters = current_clusters(net)
         net.cluster_means = current_cluster_means(net)
+    # The planes and groups of looking4clusters are added last, so that asking for them leaves everything
+    # above as it was, the sample drawn by max_n and the jitter included; the classes of the latent model
+    # travel the same way
+    if l4c_lay or rot_lay or l4c_meth or latent_m:
+        from .rotations import rotation_axes, rotation_name
+        found = (l4c_run(l4c_data, l4c_lay, l4c_meth, ks_used, seed=seed, force_execution=force_execution)
+                 if (l4c_lay or l4c_meth) else {"axes": {}, "clusters": {}})
+        text_layouts = [layouts] if isinstance(layouts, str) else (
+            list(layouts) if isinstance(layouts, (list, tuple)) else None)
+        rotated = rotation_axes(ff, vm, eig, case_weight, nfactors, rot_lay, type,
+                                quiet=text_layouts is not None and "all" in [str(x).lower() for x in text_layouts],
+                                asked=rotation_name(text_layouts) if text_layouts is not None else None)
+        found["axes"] = {**rotated, **found["axes"]}    # the rotated planes come first, as they are of the very components
+        if latent_m:
+            from .latent import run_latent
+            if latent_found is None or cluster_index != "bic":
+                latent_found = run_latent(latent_data, latent_m[0], ks_used, seed=seed)
+            width = len(str(max(ks_used)))
+            for k in ks_used:
+                if k in latent_found["clusters"]:
+                    found["clusters"][f"{latent_m[0]}({k:0{width}d})"] = latent_found["clusters"][k]
+        net = add_l4c(net, found, idx=idx, kept=None if kept is None else kept + 1, case_weight=case_weight,
+                      sort=sort_clusters, suffix=suffix, align_to=align_to,
+                      axes_labels="keep" if stated_labels else None)
     if k_index is not None:
         net.scat["cluster_index"] = k_index
     return net

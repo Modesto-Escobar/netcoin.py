@@ -188,6 +188,32 @@ scat = sur_scat(survey, ["gender", "age", "works"], patterns=True, nclusters="au
 scat.clusters          # centroids of every group on every plane
 ```
 
+The planes and the groups of the scattergram can be extended, when it is drawn or afterwards:
+
+```python
+from netcoin import (sur_scat, add_axes, add_clusters, replace_clusters, layouts_align,
+                     add_communities, cluster_match, cluster_agree)
+
+# rotations of the components, planes of looking4clusters and its groups, latent models (LPA / LCA)
+scat = sur_scat(survey, ["q1", "q2", "q3", "q4"], nfactors=3, nclusters=[2, 3],
+                layouts=["varimax", "pca", "cmds"], clusters=["pam", "hclust", "lpa"],
+                suffix="*")                       # every added plane also aligned to the main one
+
+scat = add_clusters(scat, my_groups, name="mine")  # one label per case (or per node)
+scat = add_axes(scat, two_columns, name="mine")    # another plane
+scat = layouts_align(scat, to=1, gpa=True)         # Procrustes alignment of every plane
+scat = add_communities(scat, survey, community=["louvain", "walktrap"])  # communities of the
+                                                   # correlation network between the cases
+cluster_match(scat, "Groups(3)")                   # how well each grouping reproduces a model
+cluster_agree(scat, "Groups(3)")                   # Rand, Jaccard, NMI... of every pair of groupings
+```
+
+`nclusters=["auto", ...]` can choose the number of groups by the BIC of the latent model that
+suits the analysis (`cluster_index="bic"`; a 1 among the numbers also weighs having no groups).
+The latent models are estimated here with their own EM (profiles with equal diagonal variances
+for quantitative variables, independent categorical variables inside each class for qualitative
+ones), not with mclust and poLCA.
+
 ### Log-linear associations
 
 `log_coin` fits a log-linear model to the table of several categorical variables and draws the
@@ -290,6 +316,8 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | One page of several networks      | `caring(path, arguments)` (sur_coin, sur_scat, log_coin, all_net, glm_coin) |
 | Regression networks               | `glm_coin(...)` (marginal effects against the weighted mean) |
 | Scattergram of the cases          | `sur_scat(...)` (MCA/PCA planes, k-means groups, patterns) |
+| Planes and groups of a scattergram | `add_axes(...)`, `add_clusters(...)`, `replace_clusters(...)`, `layouts_align(...)`, `add_communities(...)` |
+| Agreement among groupings         | `cluster_match(...)`, `cluster_agree(...)` |
 | Clusters and 2-d reductions       | `looking4clusters(...)` (PAM, hclust, k-means, PCA, MDS, t-SNE, NMF, UMAP) |
 | Log-linear associations           | `log_coin(...)`                            |
 | Networks of correlations          | `net_corr(...)`, `d_net_corr(...)`, `layout_fact(...)` |

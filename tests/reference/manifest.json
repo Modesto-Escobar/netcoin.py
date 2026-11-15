@@ -1472,6 +1472,102 @@
     "cm_agree_columns": {
       "call": "clusterAgree(N, \"c\", columns = c(\"a\", \"b\"))",
       "files": "cm_agree_columns"
+    },
+    "net_sl_rot2": {
+      "call": "surScat(sq, Q6, nclusters = 2, layouts = rots)",
+      "files": ["net_sl_rot2_nodes", "net_sl_rot2_links"]
+    },
+    "net_sl_rot3": {
+      "call": "surScat(sq, Q6, nclusters = 3, nfactors = 3, layouts = rots)",
+      "files": ["net_sl_rot3_nodes", "net_sl_rot3_links"]
+    },
+    "net_sl_rot4": {
+      "call": "surScat(sq, Q6, nclusters = 2, nfactors = 4, layouts = \"varimax\")",
+      "files": ["net_sl_rot4_nodes", "net_sl_rot4_links"]
+    },
+    "net_sl_rot_w": {
+      "call": "surScat(sq, Q6, weight = \"w\", nclusters = 2, nfactors = 3, layouts = rots)",
+      "files": ["net_sl_rot_w_nodes", "net_sl_rot_w_links"]
+    },
+    "net_sl_l4c_pca": {
+      "call": "surScat(sq, Q6, nclusters = 2, layouts = c(\"pca\",\"cmds\"), clusters = c(\"pam\",\"hclust\"))",
+      "files": ["net_sl_l4c_pca_nodes", "net_sl_l4c_pca_links"]
+    },
+    "net_sl_l4c_ks": {
+      "call": "surScat(sq, Q6, nclusters = c(2, 3, 14), clusters = c(\"pam\",\"hclust\"))",
+      "files": ["net_sl_l4c_ks_nodes", "net_sl_l4c_ks_links"]
+    },
+    "net_sl_l4c_suffix": {
+      "call": "surScat(sq, Q6, nclusters = 2, nfactors = 3, layouts = c(\"varimax\",\"pca\"), suffix = \"*\")",
+      "files": ["net_sl_l4c_suffix_nodes", "net_sl_l4c_suffix_links"]
+    },
+    "net_sl_l4c_align": {
+      "call": "surScat(sq, Q6, nclusters = 2, nfactors = 3, layouts = c(\"varimax\",\"pca\"), suffix = \"*\", alignTo = \"varimax\")",
+      "files": ["net_sl_l4c_align_nodes", "net_sl_l4c_align_links"]
+    },
+    "net_sl_l4c_align_n": {
+      "call": "surScat(sq, Q6, nclusters = 2, layouts = c(\"pca\",\"cmds\"), suffix = \"~\", alignTo = 2)",
+      "files": ["net_sl_l4c_align_n_nodes", "net_sl_l4c_align_n_links"]
+    },
+    "net_sl_l4c_maxn": {
+      "call": "surScat(sq, Q6, nclusters = 2, maxN = 60, layouts = c(\"pca\",\"varimax\"), clusters = \"pam\")",
+      "files": ["net_sl_l4c_maxn_nodes", "net_sl_l4c_maxn_links"]
+    },
+    "net_sl_l4c_mca": {
+      "call": "surScat(ess, V4, nclusters = 2, patterns = TRUE, layouts = \"pca\", clusters = c(\"hclust\",\"pam\"))",
+      "files": ["net_sl_l4c_mca_nodes", "net_sl_l4c_mca_links"]
+    },
+    "net_sl_lpa": {
+      "call": "surScat(sq, Q6, nclusters = c(2, 3), clusters = \"lpa\")",
+      "files": ["net_sl_lpa_nodes", "net_sl_lpa_links"]
+    },
+    "net_sl_bic": {
+      "call": "surScat(sq, Q6, nclusters = c(\"auto\", 1, 2, 3, 4, 5), clusterIndex = \"bic\")",
+      "files": ["net_sl_bic_nodes", "net_sl_bic_links"]
+    },
+    "net_sl_bic_auto": {
+      "call": "surScat(sq, Q6, nclusters = c(\"auto\", 2, 3, 4), clusterIndex = \"bic\", clusters = \"lpa\")",
+      "files": ["net_sl_bic_auto_nodes", "net_sl_bic_auto_links"]
+    },
+    "net_sl_lca": {
+      "call": "surScat(ess, V4, nclusters = c(2, 3), clusters = \"lca\")",
+      "files": ["net_sl_lca_nodes", "net_sl_lca_links"]
+    },
+    "net_sl_lca_bic": {
+      "call": "surScat(ess, V4, nclusters = c(\"auto\", 2, 3), clusterIndex = \"bic\")",
+      "files": ["net_sl_lca_bic_nodes", "net_sl_lca_bic_links"]
+    },
+    "net_sl_ac_fa_wa_le": {
+      "call": "addCommunities(N, sq, Q6, community = c(\"fa\",\"wa\",\"le\"), minL = .5)",
+      "files": ["net_sl_ac_fa_wa_le_nodes", "net_sl_ac_fa_wa_le_links"]
+    },
+    "net_sl_ac_ed": {
+      "call": "addCommunities(N, sq, Q6, community = \"ed\", minL = .5)",
+      "files": ["net_sl_ac_ed_nodes", "net_sl_ac_ed_links"]
+    },
+    "net_sl_ac_minsize": {
+      "call": "addCommunities(N, sq, Q6, community = \"wa\", minL = .5, minSize = 15, maxCommunities = 3)",
+      "files": ["net_sl_ac_minsize_nodes", "net_sl_ac_minsize_links"]
+    },
+    "net_sl_ac_name": {
+      "call": "addCommunities(N, sq, Q6, community = \"walktrap\", name = \"W\", minL = .5)",
+      "files": ["net_sl_ac_name_nodes", "net_sl_ac_name_links"]
+    },
+    "net_sl_ac_spearman": {
+      "call": "addCommunities(N, sq, Q6, community = \"fa\", method = \"spearman\", minL = .5)",
+      "files": ["net_sl_ac_spearman_nodes", "net_sl_ac_spearman_links"]
+    },
+    "net_sl_ac_noscale": {
+      "call": "addCommunities(N, sq, Q6, community = \"fa\", scale = FALSE, minL = .5)",
+      "files": ["net_sl_ac_noscale_nodes", "net_sl_ac_noscale_links"]
+    },
+    "net_sl_ac_weight": {
+      "call": "addCommunities(N, sq, Q6, community = \"le\", minL = .5, weight = x1)",
+      "files": ["net_sl_ac_weight_nodes", "net_sl_ac_weight_links"]
+    },
+    "net_sl_ac_maxn": {
+      "call": "addCommunities(N maxN=60, sq, Q6, community = \"wa\", minL = .3)",
+      "files": ["net_sl_ac_maxn_nodes", "net_sl_ac_maxn_links"]
     }
   }
 }

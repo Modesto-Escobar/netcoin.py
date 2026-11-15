@@ -1036,5 +1036,74 @@ cm_case("agree_patterns", 'clusterAgree(Np, "g1")', clusterAgree(Npm, "g1"))
 cm_case("agree_patterns_cases", "clusterAgree(Np, case_model)", clusterAgree(Npm, cm_cases))
 cm_case("agree_columns", 'clusterAgree(N, "c", columns = c("a", "b"))', clusterAgree(Nm, "c", columns = c("a", "b")))
 
+# ------------------------------------------- surScat: layouts, clusters, latent models, communities ----
+# Quantitative data of three groups (so that rotations, k-means-free groupings and latent models have
+# something to find), and calls to surScat that add planes and groups beyond its own.
+set.seed(77)
+sq_g <- rep(1:3, each = 50)
+sq <- as.data.frame(matrix(rnorm(150 * 6), 150, 6) + outer(sq_g, c(2, -2, 1, 0, 1, -1)))
+names(sq) <- paste0("x", 1:6)
+sq$w <- round(runif(150, .5, 2), 3)
+write_csv(sq, "scat_quant", dir_in)
+Q6 <- paste0("x", 1:6)
+sl_case <- function(id, call_txt, expr) {
+  tryCatch({
+    N <- suppressMessages(suppressWarnings(expr))
+    net_case(paste0("sl_", id), call_txt, N)
+    info <- list(layouts = lapply(N$layouts, function(m) list(names = colnames(m), data = unname(split(unname(m), row(m))))),
+                 clusters = lapply(N$clusters, function(m) { m <- as.matrix(m); list(rows = rownames(m), cols = colnames(m), data = unname(split(unname(m), row(m)))) }),
+                 clusterColumns = attr(N, "clusterColumns"), planeName = attr(N, "planeName"),
+                 layoutsAxesLabels = N$options$layoutsAxesLabels, axesLabels = N$options$axesLabels)
+    ki <- attr(N, "clusterIndex"); if (!is.null(ki)) { info$clusterIndex <- as.list(ki); info$clusterIndexName <- attr(ki, "index") }
+    write_json(info, file.path(dir_out, paste0("sl_", id, "_info.json")), auto_unbox = TRUE, digits = NA, na = "null")
+  }, error = function(e) message("surScat layouts case ", id, " FAILED: ", conditionMessage(e)))
+}
+rots <- c("varimax", "quartimax", "equamax")
+sl_case("rot2", 'surScat(sq, Q6, nclusters = 2, layouts = rots)', surScat(sq, Q6, nclusters = 2, layouts = rots))
+sl_case("rot3", 'surScat(sq, Q6, nclusters = 3, nfactors = 3, layouts = rots)', surScat(sq, Q6, nclusters = 3, nfactors = 3, layouts = rots))
+sl_case("rot4", 'surScat(sq, Q6, nclusters = 2, nfactors = 4, layouts = "varimax")', surScat(sq, Q6, nclusters = 2, nfactors = 4, layouts = "varimax"))
+sl_case("rot_w", 'surScat(sq, Q6, weight = "w", nclusters = 2, nfactors = 3, layouts = rots)',
+        surScat(sq, Q6, weight = "w", nclusters = 2, nfactors = 3, layouts = rots))
+sl_case("l4c_pca", 'surScat(sq, Q6, nclusters = 2, layouts = c("pca","cmds"), clusters = c("pam","hclust"))',
+        surScat(sq, Q6, nclusters = 2, layouts = c("pca", "cmds"), clusters = c("pam", "hclust")))
+sl_case("l4c_ks", 'surScat(sq, Q6, nclusters = c(2, 3, 14), clusters = c("pam","hclust"))',
+        surScat(sq, Q6, nclusters = c(2, 3, 14), clusters = c("pam", "hclust")))
+sl_case("l4c_suffix", 'surScat(sq, Q6, nclusters = 2, nfactors = 3, layouts = c("varimax","pca"), suffix = "*")',
+        surScat(sq, Q6, nclusters = 2, nfactors = 3, layouts = c("varimax", "pca"), suffix = "*"))
+sl_case("l4c_align", 'surScat(sq, Q6, nclusters = 2, nfactors = 3, layouts = c("varimax","pca"), suffix = "*", alignTo = "varimax")',
+        surScat(sq, Q6, nclusters = 2, nfactors = 3, layouts = c("varimax", "pca"), suffix = "*", alignTo = "varimax"))
+sl_case("l4c_align_n", 'surScat(sq, Q6, nclusters = 2, layouts = c("pca","cmds"), suffix = "~", alignTo = 2)',
+        surScat(sq, Q6, nclusters = 2, layouts = c("pca", "cmds"), suffix = "~", alignTo = 2))
+sl_case("l4c_maxn", 'surScat(sq, Q6, nclusters = 2, maxN = 60, layouts = c("pca","varimax"), clusters = "pam")',
+        surScat(sq, Q6, nclusters = 2, maxN = 60, layouts = c("pca", "varimax"), clusters = "pam"))
+sl_case("l4c_mca", 'surScat(ess, V4, nclusters = 2, patterns = TRUE, layouts = "pca", clusters = c("hclust","pam"))',
+        surScat(ess_w, V4, nclusters = 2, patterns = TRUE, layouts = "pca", clusters = c("hclust", "pam")))
+sl_case("lpa", 'surScat(sq, Q6, nclusters = c(2, 3), clusters = "lpa")', surScat(sq, Q6, nclusters = c(2, 3), clusters = "lpa"))
+sl_case("bic", 'surScat(sq, Q6, nclusters = c("auto", 1, 2, 3, 4, 5), clusterIndex = "bic")',
+        surScat(sq, Q6, nclusters = c("auto", 1, 2, 3, 4, 5), clusterIndex = "bic"))
+sl_case("bic_auto", 'surScat(sq, Q6, nclusters = c("auto", 2, 3, 4), clusterIndex = "bic", clusters = "lpa")',
+        surScat(sq, Q6, nclusters = c("auto", 2, 3, 4), clusterIndex = "bic", clusters = "lpa"))
+sl_case("lca", 'surScat(ess, V4, nclusters = c(2, 3), clusters = "lca")', surScat(ess_w, V4, nclusters = c(2, 3), clusters = "lca"))
+sl_case("lca_bic", 'surScat(ess, V4, nclusters = c("auto", 2, 3), clusterIndex = "bic")',
+        surScat(ess_w, V4, nclusters = c("auto", 2, 3), clusterIndex = "bic"))
+
+Nq <- suppressMessages(surScat(sq, Q6, nclusters = 2))
+ac_case <- function(id, call_txt, expr) sl_case(paste0("ac_", id), call_txt, expr)
+ac_case("fa_wa_le", 'addCommunities(N, sq, Q6, community = c("fa","wa","le"), minL = .5)',
+        addCommunities(Nq, sq, Q6, community = c("fa", "wa", "le"), minL = .5))
+ac_case("ed", 'addCommunities(N, sq, Q6, community = "ed", minL = .5)', addCommunities(Nq, sq, Q6, community = "ed", minL = .5))
+ac_case("minsize", 'addCommunities(N, sq, Q6, community = "wa", minL = .5, minSize = 15, maxCommunities = 3)',
+        addCommunities(Nq, sq, Q6, community = "wa", minL = .5, minSize = 15, maxCommunities = 3))
+ac_case("name", 'addCommunities(N, sq, Q6, community = "walktrap", name = "W", minL = .5)',
+        addCommunities(Nq, sq, Q6, community = "walktrap", name = "W", minL = .5))
+ac_case("spearman", 'addCommunities(N, sq, Q6, community = "fa", method = "spearman", minL = .5)',
+        addCommunities(Nq, sq, Q6, community = "fa", method = "spearman", minL = .5))
+ac_case("noscale", 'addCommunities(N, sq, Q6, community = "fa", scale = FALSE, minL = .5)',
+        addCommunities(Nq, sq, Q6, community = "fa", scale = FALSE, minL = .5))
+ac_case("weight", 'addCommunities(N, sq, Q6, community = "le", minL = .5, weight = x1)',
+        addCommunities(Nq, sq, Q6, community = "le", minL = .5, weight = sq$x1 - min(sq$x1) + 1))
+Nqp <- suppressMessages(surScat(sq, Q6, nclusters = 2, maxN = 60))
+ac_case("maxn", 'addCommunities(N maxN=60, sq, Q6, community = "wa", minL = .3)', addCommunities(Nqp, sq, Q6, community = "wa", minL = .3))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

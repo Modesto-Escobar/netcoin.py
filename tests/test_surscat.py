@@ -147,15 +147,19 @@ def test_auto_chooses_by_the_index_and_keeps_the_table(survey):
     assert both.scat["cluster_index"].attrs["index"] == "silhouette"
 
 
-def test_the_bic_falls_back_to_calinski_harabasz(survey):
-    with pytest.warns(UserWarning, match="not available yet"):
-        net = sur_scat(survey, QUALI, nclusters=["auto", 2, 3], cluster_index="bic")
-    assert net.scat["cluster_index"].attrs["index"] == "Calinski-Harabasz"
+def test_the_bic_is_that_of_the_latent_model_that_suits_the_analysis(survey):
+    net = sur_scat(survey, QUALI, nclusters=["auto", 2, 3], cluster_index="bic")
+    index = net.scat["cluster_index"]
+    assert index.attrs["index"] == "BIC of LCA" and list(index["k"]) == [2, 3]
+    assert index["optimal"].sum() == 1 and index["optimal"].iloc[int(np.argmin(index["bic"]))]
+    quanti = sur_scat(survey, ["age", "inc"], nclusters=["auto", 2, 3], cluster_index="bic")
+    assert quanti.scat["cluster_index"].attrs["index"] == "BIC of LPA"
 
 
-def test_what_is_not_ported_yet_is_said(survey):
-    with pytest.warns(UserWarning, match="layouts"):
-        sur_scat(survey, QUALI, nclusters=2, layouts=["pca"])
+def test_network_layouts_mean_nothing_to_a_scattergram(survey):
+    with pytest.warns(UserWarning, match="network layouts do not apply"):
+        net = sur_scat(survey, QUALI, nclusters=2, layouts=["fr"])
+    assert not net.layouts
 
 
 def test_weights_and_missing_values(survey):
