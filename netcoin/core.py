@@ -425,6 +425,10 @@ class netCoin:
     arguments.update(kwargs)
     return netCoin(**arguments)
 
+  def _create(self, directory, title=None):
+    """Write the web page of this graph (used by multigraphCreate)."""
+    netCreate(self, directory, title)
+
   def ncount(self):
     return len(self.nodes[self.options['nodeName']])
 

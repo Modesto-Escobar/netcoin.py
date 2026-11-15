@@ -7,7 +7,20 @@ _FONT_STYLES = ("styles.css", "styles2.css")
 _FONTS = ("Roboto-Regular-latin.woff2", "Roboto-Regular-latin-ext.woff2")
 
 
-def createHTML(directory, styles, scripts, data=None):
+def _is_netcoin_page(html):
+  """True for a page written by this package, including those of earlier versions.
+
+  Earlier versions did not write the project mark, but their pages always held
+  the JSON data and loaded the engine scripts from ``scripts/``.
+  """
+  if PROJECT_MARK in html:
+    return True
+  return ('id="data"' in html and 'src="scripts/' in html
+          and any(('scripts/' + js) in html for js in ('network.js', 'barplot.js', 'timeline.js',
+                                                       'multigraph.js', 'polygraph.js', 'pie.js')))
+
+
+def createHTML(directory, styles, scripts, data=None, title=None):
   """Write ``directory/index.html`` with its styles, scripts and the JSON ``data``.
 
   Like rD3plot, an existing directory is only replaced when it holds a page made
@@ -20,9 +33,9 @@ def createHTML(directory, styles, scripts, data=None):
   if os.path.exists(directory):
     if os.path.isfile(index_path):
       with open(index_path, encoding="utf-8", errors="replace") as f:
-        made_here = PROJECT_MARK in f.read()
-      if not made_here:
-        raise FileExistsError("directory: '%s' already exists" % directory)
+        if not _is_netcoin_page(f.read()):
+          raise FileExistsError("directory: '%s' already exists and is not a netCoin graph "
+                                "(delete it or choose another one)" % directory)
       shutil.rmtree(directory)
     elif os.path.isdir(directory) and not os.listdir(directory):
       pass
@@ -32,7 +45,7 @@ def createHTML(directory, styles, scripts, data=None):
 
   with open(os.path.join(www, 'template.html'), encoding="utf-8") as f:
     html = f.read()
-  name = os.path.basename(os.path.normpath(directory))
+  name = title if title is not None else os.path.basename(os.path.normpath(directory))
   html = html.replace('titulo', name)
 
   head = ''

@@ -121,13 +121,27 @@ net = net.add(color="%")                          # a copy with some arguments c
 net.plot()                                        # opens it in the browser
 ```
 
+### Several graphs in one page
+
+```python
+from netcoin import multigraphCreate
+
+multigraphCreate([net1, net2, net3], names=["2019", "2020", "2021"],
+                 mode="default")                    # a selector between graphs
+multigraphCreate([net1, net2], mode="parallel")     # side by side
+multigraphCreate([net1, net2, net3], mode="frame",  # one network that evolves
+                 directory="evolution", speed=30, loop=True)
+```
+
+An existing folder is only replaced if it holds a graph written by this package.
+
 ## Main features
 
 | Area                              | Key API                                    |
 |-----------------------------------|--------------------------------------------|
 | Interactive coincidence networks  | `netCoin(...)`, `netCoin.plot(...)`        |
 | Build a network from a matrix     | `netCoin.fromMatrix(...)`                  |
-| Multi-graph visualisations        | `multigraphCreate(...)`                    |
+| Multi-graph visualisations        | `multigraphCreate(...)` (default, parallel, frame) |
 | Coincidences (`Coin` object)      | `coin(...)`                                |
 | Similarity measures (Jaccard, …)  | `sim(...)`                                 |
 | Observed vs expected coincidences | `expected_list(...)`                       |
@@ -140,7 +154,10 @@ net.plot()                                        # opens it in the browser
 Visualisations are powered by D3.js. All required web assets (`d3.min.js`,
 templates, stylesheets and language files for English, Spanish and Catalan)
 ship with the package under `netcoin/www/` and are copied to the output
-directory automatically.
+directory automatically. They are the engine of the R package
+[rD3plot](https://github.com/Modesto-Escobar/rD3plot) (version recorded in
+`netcoin/www/SOURCE.json`); to update them run
+`python tools/sync_www.py --source <path to rD3plot>`.
 
 ## Documentation and examples
 

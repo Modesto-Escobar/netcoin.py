@@ -105,7 +105,7 @@ def netWrapper(net,directory):
   return networkJSON(net)
 
 
-def netCreate(graph, directory):
+def netCreate(graph, directory, title=None):
   #create html wrapper for network graph
   language = getLanguageScript(graph) or "en.js"
 
@@ -117,4 +117,4 @@ def netCreate(graph, directory):
     scripts += ["stdlib.bundle.js", "statistics_" + language]
   scripts += ["images.js", "colorScales.js", "functions.js", language, "network.js"]
 
-  createHTML(directory, styles, scripts, lambda: netWrapper(graph, directory))
+  createHTML(directory, styles, scripts, lambda: netWrapper(graph, directory), title)

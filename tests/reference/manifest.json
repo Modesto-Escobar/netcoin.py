@@ -528,6 +528,10 @@
     "allnet_bonferroni": {
       "call": "allNet(dice[,2:11], Bonferroni = TRUE, maxL = .2, directed = TRUE, sortL = \"Haberman\")",
       "files": "allnet_bonferroni"
+    },
+    "evo_result": {
+      "call": "multigraphCreate(first=, second=, third=, mode = \"frame\", frame = 1, speed = 30, loop = TRUE, lineplots = c(\"v\",\"degree\",\"bogus\"))",
+      "files": ["evo_result_nodes", "evo_result_links"]
     }
   }
 }

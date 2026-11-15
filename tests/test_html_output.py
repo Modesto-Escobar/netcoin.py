@@ -60,6 +60,16 @@ def test_a_netcoin_page_is_replaced(tmp_path):
     assert _payload(tmp_path / "n" / "index.html") == {"a": 2}
 
 
+def test_pages_of_earlier_versions_are_recognised(tmp_path):
+    old = tmp_path / "old"
+    old.mkdir()
+    (old / "index.html").write_text(
+        '<html><head><script type="text/javascript" src="scripts/network.js"></script></head>'
+        '<body><script type="application/json" id="data">{}</script></body></html>')
+    createHTML(str(old), [], [], {"a": 1})
+    assert _payload(old / "index.html") == {"a": 1}
+
+
 def test_foreign_directories_are_never_deleted(tmp_path):
     mine = tmp_path / "documents"
     mine.mkdir()

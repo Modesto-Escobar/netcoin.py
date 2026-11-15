@@ -38,7 +38,7 @@ def test_galleries_are_not_shipped():
 def test_every_script_of_a_network_exists(language, tmp_path, monkeypatch):
     written = {}
     monkeypatch.setattr(network, "createHTML",
-                        lambda directory, styles, scripts, data: written.update(styles=styles, scripts=scripts))
+                        lambda directory, styles, scripts, data, title=None: written.update(styles=styles, scripts=scripts))
     net = {"options": {"language": language, "statistics": True}, "nodes": {}, "links": {}}
     network.netCreate(net, str(tmp_path / "x"))
     assert written["scripts"][-2:] == [f"{language}.js", "network.js"]

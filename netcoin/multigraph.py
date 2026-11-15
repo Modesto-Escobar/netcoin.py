@@ -1,180 +1,252 @@
-import os, webbrowser
+"""Several graphs in one page (port of rD3plot's ``rd3_multigraph`` and ``evolNetwork_rd3``).
+
+Every graph is written to its own folder (``data/0``, ``data/1``...) and the main
+page only holds a selector (``multigraph.js``); the ``parallel`` mode shows
+several of them side by side, and the ``frame`` mode merges networks into one
+that evolves from frame to frame.
+"""
+from __future__ import annotations
+
+import os
+import warnings
+import webbrowser
+from copy import deepcopy
 from shutil import copytree
-from .utils import createHTML, getLanguageScript
-from .network import netWrapper, netCreate
+from typing import Sequence
+
 from .core import netCoin
+from .network import netCreate
+from .utils import createHTML
 
-# create json for multigraph
-def multigraphJSON(graphs,names,directory):
-  #prepare json
-  json = []
-  types = []
-  items = []
-  for i,item in enumerate(names):
-    graph = graphs[i]
-    gClass = type(graph).__name__
-    jsongraph = {}
-    if gClass == 'netCoin':
-      jsongraph = netWrapper(graph,directory)
-    elif gClass == 'str' and os.path.isfile(os.path.join(graph,'index.html')):
-      gClass = 'iFrame'
-      graphName = os.path.basename(graph)
-      copytree(graph,os.path.join(directory,'data',graphName))
-      jsongraph = 'data/'+graphName
-    else:
-      print("Object of class '"+gClass+"' not supported")
+_MODES = {"d": "default", "p": "parallel", "f": "frame"}
+
+
+def _is_graph_folder(graph) -> bool:
+  return isinstance(graph, (str, os.PathLike)) and os.path.isfile(os.path.join(graph, "index.html"))
+
+
+def _clean_graphs(graphs, names) -> dict:
+  """The graphs as an ordered dict name -> graph, skipping unsupported objects."""
+  if isinstance(graphs, dict):
+    names = list(graphs.keys())
+    graphs = list(graphs.values())
+  if not graphs or not isinstance(graphs, (list, tuple)):
+    raise ValueError("graphs: must be a non-empty list")
+
+  if names is not None and len(names) != len(graphs):
+    warnings.warn("names: length must match 'graphs' length")
+    names = None
+
+  out = {}
+  for i, graph in enumerate(graphs):
+    if not (isinstance(graph, netCoin) or _is_graph_folder(graph) or hasattr(graph, "_create")):
+      warnings.warn("Not supported object found (%s)" % type(graph).__name__)
       continue
-    json.append(jsongraph)
-    types.append(gClass)
-    items.append(item)
+    name = str(names[i]) if names is not None else "graph" + str(len(out) + 1)
+    out[name] = graph
+  if not out:
+    raise ValueError("graphs: no supported graph found")
+  return out
 
-  return {'items':items,'types':types,'data':json}
 
-def multiGraph(graphs,names,directory):
-  language = set(map(getLanguageScript, graphs))
-  language.discard(None)
-  if len(language)!=1:
-    language = "en.js"
-  else:
-    language = list(language)[0]
+def _write_graph(graph, directory: str, title: str, idx: int, names: list[str]):
+  """One graph of a multigraph, in its own folder."""
+  if _is_graph_folder(graph):
+    copytree(str(graph), directory)
+    return
+  graph = deepcopy(graph)                      # the caller's object is left untouched
+  graph.options["multigraph"] = {"idx": idx, "names": names}
+  graph._create(directory, title)
 
-  createHTML(directory, ["reset.css","styles.css","d3.min.js","jspdf.min.js","jszip.min.js","iro.min.js","functions.js",language,"colorScales.js","multigraph.js","network.js","barplot.js","timeline.js"], lambda: multigraphJSON(graphs,names,directory))
 
-def polyGraph(graphs,names,directory):
-  createHTML(directory, ["polygraph.js"], None)
-  multiGraph(graphs,names,os.path.join(directory,"multiGraph"))
+def multiGraph(graphs: dict, directory: str):
+  """The selector page and one folder per graph."""
+  names = list(graphs)
+  options = {"names": names}
+  external = [_is_graph_folder(g) for g in graphs.values()]
+  if any(external):
+    options["external"] = external
+  createHTML(directory, ["reset.css"], ["multigraph.js"], {"options": options})
+  os.makedirs(os.path.join(directory, "data"), exist_ok=True)
+  for i, (name, graph) in enumerate(graphs.items()):
+    _write_graph(graph, os.path.join(directory, "data", str(i)), name, i, names)
 
-def frameGraph(graphs,names,directory):
-  classes = set(map(lambda x: type(x).__name__, graphs))
-  if len(classes)!=1 or 'netCoin' not in classes:
-    raise Exception("All graphs must be 'netCoin' objects")
 
-  name = graphs[0].options['nodeName']
-  source = graphs[0].options['linkSource']
-  target = graphs[0].options['linkTarget']
+def polyGraph(graphs: dict, mfrow: Sequence[int], directory: str):
+  """Several graphs shown at the same time in a grid of ``mfrow`` rows x columns."""
+  createHTML(directory, [], ["polygraph.js"], {"options": {"mfrow": list(mfrow), "n": len(graphs)}})
+  if mfrow[0] * mfrow[1] > 2:                  # too small for the controls
+    graphs = {k: _without_controls(g) for k, g in graphs.items()}
+  multiGraph(graphs, os.path.join(directory, "multiGraph"))
 
-  def compareLists(a,b):
-    aa = set(a)
-    bb = set(b)
-    if len(aa.difference(bb))==0 and len(bb.difference(aa))==0:
-      return True
-    return False
 
-  nodenames = graphs[0].getNodeAttr()
-  linknames = graphs[0].getLinkAttr()
-  multi = []
-  for g in graphs:
-    if g.lcount()==0:
-      raise Exception("links: all graphs must have links")
-    if not compareLists(nodenames,g.getNodeAttr()):
-      raise Exception("nodes: all graphs must have the same node columns")
-    if not compareLists(linknames,g.getLinkAttr()):
-      raise Exception("links: all graphs must have the same link columns")
-    if name!=g.options['nodeName']:
-      raise Exception("name: all graphs must have the same name")
-    if source!=g.options['linkSource']:
-      raise Exception("source: all graphs must have the same source")
-    if target!=g.options['linkTarget']:
-      raise Exception("target: all graphs must have the same target")
-    multi.append(g.getNet())
+def _without_controls(graph):
+  if isinstance(graph, netCoin):
+    graph = deepcopy(graph)
+    graph.options.pop("controls", None)
+  return graph
 
-  linknames.append("_frame_")
-  links = {}
-  for k in linknames:
-    links[k] = []
-  for i in range(len(names)):
-    nlinks = len(multi[i]['links'][source])
-    for k in linknames:
-      if k in [source,target]:
-        links[k].extend(list(map(lambda x: multi[i]['nodes'][name][x], multi[i]['links'][k])))
-      elif k=="_frame_":
-        links[k].extend([i]*nlinks)
-      else:
-        links[k].extend(multi[i]['links'][k])
 
-  nodes = {}
-  nodes[name] = list(set([item for sublist in map(lambda x: x['nodes'][name],multi) for item in sublist]))
-  for n in nodenames:
-    if n!=name:
-      nodes[n] = [None]*len(nodes[name])
-      for x,nam in enumerate(nodes[name]):
-        def getValues(f):
-          try:
-            return multi[f]['nodes'][n][multi[f]['nodes'][name].index(nam)]
-          except:
-            return None
-        values = list(map(getValues, range(len(names))))
-        aux = set(values)
-        aux.discard(None)
-        if len(aux)<2:
-          if len(aux)==1:
-            nodes[n][x] = list(aux)[0]
-          continue
-        for i,val in enumerate(values):
-          if val:
-            values[i] = str(val)
-          else:
-            values[i] = ''
-        nodes[n][x] = '|'.join(values)
+# ---------------------------------------------------------------- frames ----
+def _chr(value) -> str:
+  """``as.character`` of one value; missing values are blank."""
+  if value is None or (isinstance(value, float) and value != value):
+    return ""
+  if isinstance(value, float) and value.is_integer():
+    return str(int(value))
+  return str(value)
 
-  for k in [source,target]:
-    links[k] = list(map(lambda x: nodes[name].index(x), links[k]))
 
-  options = multi[0]['options']
+def evolvingNetwork(graphs: dict, frame: int = 0, speed: float = 50, loop: bool = False,
+                    lineplots: Sequence[str] | None = None) -> dict:
+  """Merge networks that share nodes into one that evolves, one frame per graph.
 
-  def getAll(item):
-    items = []
-    for x in multi:
-      if item in x['options']:
-        items.append(x['options'][item])
-      else:
-        items.append(None)
-    if len(set(items))!=1:
-      options[item] = items
+  Links get a ``_frame_`` column. A node attribute that changes between frames
+  becomes the text ``"v1|v2|..."`` that ``network.js`` splits into one value per
+  frame (a blank where the node is absent).
+  """
+  if len(graphs) < 2:
+    raise ValueError("Cannot make an evolving network with only one graph")
+  if not all(isinstance(g, netCoin) for g in graphs.values()):
+    raise ValueError("All graphs must be 'netCoin' objects")
+  if not (isinstance(frame, (int, float)) and frame >= 0):
+    warnings.warn("frame: must be an integer greater than 0")
+    frame = 0
+  if not (isinstance(speed, (int, float)) and 0 <= speed <= 100):
+    warnings.warn("speed: must be numeric between 0 and 100")
+    speed = 50
 
-  for item in ["main","note","repulsion","distance","zoom"]:
-    getAll(item)
-  options['frames'] = names
-  net = {'links':links,'nodes':nodes,'nodeAttrNames':nodenames,'linkAttrNames':linknames,'options':options}
+  frames = list(graphs)
+  multi = list(graphs.values())
+  first = multi[0]
+
+  name = first.options["nodeName"]
+  if any(g.options["nodeName"] != name for g in multi):
+    raise ValueError("name: all graphs must have the same name")
+  node_cols = first.getNodeAttr()
+  link_cols = first.getLinkAttr()
+  for g in multi:
+    if g.lcount() == 0:
+      raise ValueError("links: all graphs must have links")
+    if set(g.getNodeAttr()) != set(node_cols):
+      raise ValueError("nodes: all graphs must have the same node columns")
+    if set(g.getLinkAttr()) != set(link_cols):
+      raise ValueError("links: all graphs must have the same link columns")
+  source, target = first.options["linkSource"], first.options["linkTarget"]
+  for g in multi:
+    if (g.options["linkSource"], g.options["linkTarget"]) != (source, target):
+      raise ValueError("source and target: all graphs must have the same names")
+
+  # nodes: the union, in order of appearance
+  node_names = list(dict.fromkeys(n for g in multi for n in g.nodes[name]))
+  position = [{n: i for i, n in enumerate(g.nodes[name])} for g in multi]
+  nodes = {name: node_names}
+  for col in node_cols:
+    if col == name:
+      continue
+    merged = []
+    for n in node_names:
+      values = [g.nodes[col][pos[n]] if n in pos else None for g, pos in zip(multi, position)]
+      distinct = list(dict.fromkeys(values))
+      merged.append(distinct[0] if len(distinct) == 1 else "|".join(_chr(v) for v in values))
+    nodes[col] = merged
+  index = {n: i for i, n in enumerate(node_names)}
+
+  # links, with the frame they belong to
+  links = {c: [] for c in link_cols + ["_frame_"]}
+  for i, g in enumerate(multi):
+    for c in link_cols:
+      values = g.links[c]
+      if c in (source, target):
+        values = [index[v] for v in values]
+      links[c].extend(values)
+    links["_frame_"].extend([i] * g.lcount())
+
+  options = deepcopy(first.options)
+  for item in ("main", "note", "repulsion", "distance", "zoom"):
+    values = [g.options.get(item) for g in multi]
+    if len(set(map(str, values))) != 1:
+      options[item] = values
+  options["frames"] = frames
+  options["frame"] = frame
+  options["speed"] = speed
+  if loop is True:
+    options["loop"] = True
+  if lineplots:
+    allowed = set(node_cols) | set(link_cols) | {"degree"}
+    keys = [k for k in dict.fromkeys(map(str, lineplots)) if k in allowed]
+    if keys:
+      options["lineplotsKeys"] = keys
+
+  net = {"links": links, "nodes": nodes, "nodeAttrNames": list(node_cols),
+         "linkAttrNames": link_cols + ["_frame_"], "options": options}
 
   tree = []
-  for i in range(len(names)):
-    if 'tree' in multi[i]:
-      for j in multi[i]['tree']:
-        tree.append(j+[i])
-  if len(tree)!=0:
-    net['tree'] = tree
-
-  netCreate(net,directory)
+  for i, g in enumerate(multi):
+    for pair in getattr(g, "tree", None) or []:
+      tree.append(list(pair) + [i])
+  if tree:
+    net["tree"] = tree
+  return net
 
 
-#create html wrapper for multigraph
-def multigraphCreate(graphs, names = None,  mode = ["default","parallel","frame"], directory = "MultiGraph", show = True):
-  if not graphs or type(graphs) is not list:
-    raise Exception("graphs: must be a non-empty list")
+def frameGraph(graphs: dict, directory: str, frame=0, speed=50, loop=False, lineplots=None):
+  netCreate(evolvingNetwork(graphs, frame, speed, loop, lineplots), directory)
 
-  if names and len(names)!=len(graphs):
-    print("names: length must match with 'graphs' length")
-    names = None    
-  if not names:
-    print("Graph names will be generated automatically")
-    names = list(map(lambda x: "graph"+str(x+1),range(len(graphs))))
 
-  if type(mode) is list:
+# --------------------------------------------------------------- public ----
+def multigraphCreate(graphs, names=None, mode="default", directory="MultiGraph", show=True, *,
+                     mfrow=(1, 2), frame=0, speed=50, loop=False, lineplots=None) -> str:
+  """Write several graphs into one folder and (optionally) open it.
+
+  Port of ``multigraphCreate`` from the R package netCoin.
+
+  Parameters
+  ----------
+  graphs : list or dict
+      The graphs: :class:`netCoin` objects or folders that already hold a graph
+      (with an ``index.html``). A dict gives the names.
+  names : list of str, optional
+      Name of each graph (``graph1``, ``graph2``... by default).
+  mode : {"default", "parallel", "frame"}
+      ``default``: a selector to move from one graph to another;
+      ``parallel``: all of them at the same time, in a grid of ``mfrow``;
+      ``frame``: the networks are merged into one that evolves, one frame per graph.
+  directory : str
+      Folder to write. An existing folder is only replaced if it is a graph
+      made by this package.
+  show : bool
+      Open it in the browser.
+  mfrow : (rows, columns)
+      Grid of the parallel mode.
+  frame, speed, loop, lineplots
+      Frame mode: the first frame shown, the speed (0-100), whether it repeats,
+      and the variables to draw as line plots (a node or link column, or
+      ``"degree"``).
+
+  Returns
+  -------
+  str
+      The folder written.
+  """
+  if isinstance(mode, (list, tuple)):
     mode = mode[0]
-  mode = mode[0]
+  letter = str(mode)[:1].lower()
+  if letter not in _MODES:
+    raise ValueError("mode: must be 'default', 'parallel' or 'frame'")
 
-  if mode=="f" and len(graphs)==1:
-    mode = "d"
-    print("Cannot make a dynamic graph with only one graph")
+  graphs = _clean_graphs(graphs, names)
+  directory = str(directory)
 
-  if mode=="p":
-    polyGraph(graphs,names,directory)
-  elif mode=="f":
-    frameGraph(graphs,names,directory)
+  if letter == "p":
+    if not (len(mfrow) == 2 and all(isinstance(x, int) and x > 0 for x in mfrow)):
+      raise ValueError("mfrow: must be two positive integers")
+    polyGraph(graphs, mfrow, directory)
+  elif letter == "f":
+    frameGraph(graphs, directory, frame, speed, loop, lineplots)
   else:
-    multiGraph(graphs,names,directory)
-  
-  if show:
-    webbrowser.open(os.path.join(directory,'index.html'))
+    multiGraph(graphs, directory)
 
+  if show:
+    webbrowser.open(os.path.join(directory, "index.html"))
+  return directory

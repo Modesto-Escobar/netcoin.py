@@ -294,5 +294,33 @@ allnet_case("mca", "allNet(dice[,2:11], layout = \"mc\", procedures = \"Jaccard\
 allnet_case("bonferroni", "allNet(dice[,2:11], Bonferroni = TRUE, maxL = .2, directed = TRUE, sortL = \"Haberman\")",
             allNet(inc_dice, Bonferroni = TRUE, maxL = .2, directed = TRUE, sortL = "Haberman"))
 
+
+# ------------------------------------------------------- evolving network ----
+evo_nodes <- list(
+  first  = data.frame(name = c("a", "b", "c"),      v = c(1, 2, 3),     g = c("x", "x", "y"), stringsAsFactors = FALSE),
+  second = data.frame(name = c("a", "b", "c", "d"), v = c(1, 5, 3, 4),  g = c("x", "x", "y", "y"), stringsAsFactors = FALSE),
+  third  = data.frame(name = c("b", "c", "d"),      v = c(5, 3, 4),     g = c("x", "z", "y"), stringsAsFactors = FALSE))
+evo_links <- list(
+  first  = data.frame(Source = c("a", "b"),           Target = c("b", "c"),           w = c(1, 2), stringsAsFactors = FALSE),
+  second = data.frame(Source = c("a", "c"),           Target = c("b", "d"),           w = c(3, 4), stringsAsFactors = FALSE),
+  third  = data.frame(Source = c("b", "c", "b"),      Target = c("c", "d", "d"),      w = c(5, 6, 7), stringsAsFactors = FALSE))
+evo_nets <- lapply(names(evo_nodes), function(k) {
+  write_csv(evo_nodes[[k]], paste0("evo_nodes_", k), dir_in)
+  write_csv(evo_links[[k]], paste0("evo_links_", k), dir_in)
+  netCoin(evo_nodes[[k]], evo_links[[k]], main = paste("Frame", k), repulsion = if (k == "third") 50 else 25)
+})
+names(evo_nets) <- names(evo_nodes)
+E <- do.call(multigraphCreate, c(evo_nets, list(mode = "frame", frame = 1, speed = 30, loop = TRUE,
+                                                lineplots = c("v", "degree", "bogus"))))
+nd <- E$nodes; rownames(nd) <- NULL
+write_csv(nd, "evo_result_nodes", dir_out)
+lk <- E$links; rownames(lk) <- NULL
+write_csv(lk, "evo_result_links", dir_out)
+keep <- c("frames", "frame", "speed", "loop", "lineplotsKeys", "main", "note", "repulsion", "distance", "zoom", "nodeName")
+write_json(lapply(E$options[intersect(keep, names(E$options))], function(x) unname(x)),
+           file.path(dir_out, "evo_result_options.json"), auto_unbox = FALSE, na = "null")
+add_case("evo_result", "multigraphCreate(first=, second=, third=, mode = \"frame\", frame = 1, speed = 30, loop = TRUE, lineplots = c(\"v\",\"degree\",\"bogus\"))",
+         c("evo_result_nodes", "evo_result_links"))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")
