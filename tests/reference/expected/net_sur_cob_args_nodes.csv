@@ -1,0 +1,13 @@
+"nombre","%","variable","etiqueta","fx","fy"
+"Gender:Female",53.5,"Gender","Female",0.707,0.707
+"Gender:Male",46.5,"Gender","Male",0.259,0.966
+"Age:15-29",17.5,"Age","15-29",-0.259,0.966
+"Age:30-39",14.4,"Age","30-39",-0.707,0.707
+"Age:40-49",17.7,"Age","40-49",-0.966,0.259
+"Age:50-59",15.4,"Age","50-59",-0.966,-0.259
+"Age:60-69",18.9,"Age","60-69",-0.707,-0.707
+"Age:70 and +",15.9,"Age","70 and +",-0.259,-0.966
+"Social participation:No",60,"Social participation","No",0.259,-0.966
+"Social participation:Yes",39.9,"Social participation","Yes",0.707,-0.707
+"Political participation:No",72.2,"Political participation","No",0.966,-0.259
+"Political participation:Yes",27.7,"Political participation","Yes",0.966,0.259

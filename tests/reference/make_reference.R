@@ -540,5 +540,90 @@ gstrings <- c(simple = "a,b.c.d,e,f", gaps = "a;b,c.d,e.f", bottom = "a,b,.c.d,e
 write_json(as.list(gstrings), file.path(dir_out, "layoutgrid_strings.json"), auto_unbox = TRUE)
 for (g in names(gstrings)) write_matrix_plain(layoutGrid(net_nodes, gstrings[[g]], name = "name", byrow = (g == "byrow")), paste0("layoutgrid_", g))
 
+# ---------------------------------------------------- surCoin / cobCoin ----
+# The survey is `ess` (one text column per variable, missing values included) with the
+# weights; `ess_metric` adds two quantitative variables made up for the occasion.
+set.seed(1)
+ess_m <- ess_w
+ess_m$income <- round(rnorm(nrow(ess_m), 50, 10) + as.integer(factor(ess_m$Age)), 1)
+ess_m$edu    <- round(runif(nrow(ess_m)) * 10 + 2 * as.integer(factor(ess_m$Gender)), 1)
+ess_m$income[c(3, 7, 400)] <- NA
+write_csv(ess_m, "ess_metric", dir_in)
+ess_cc <- ess_w[complete.cases(ess_w), ]
+write_csv(ess_cc, "ess_complete", dir_in)
+sur_nodes <- data.frame(name = c("Gender:Male", "Age:15-29", "Gender:Female", "Age:30-39", "Social participation:Yes", "Zzz:none"),
+                        grp = c("a", "b", "a", "b", "c", "d"), stringsAsFactors = FALSE)
+write_csv(sur_nodes, "sur_nodes", dir_in)
+sur_nodes_metric <- data.frame(name = c("income", "Gender:Male", "Social participation:Yes", "Gender:Female", "edu"),
+                          grp = c("m", "a", "c", "a", "m"), stringsAsFactors = FALSE)
+write_csv(sur_nodes_metric, "sur_nodes_metric", dir_in)
+
+vars3 <- c("Gender", "Age", "Social participation")
+sur_case <- function(id, call_txt, expr) {
+  tryCatch(net_case(paste0("sur_", id), call_txt, expr),
+           error = function(e) message("surCoin case ", id, " FAILED: ", conditionMessage(e)))
+}
+sur_case("default", 'surCoin(ess, c("Gender","Age","Social participation"))', surCoin(ess_w, vars3))
+sur_case("one_dicho", 'surCoin(ess, "Gender", dichotomies = "Social participation", valueDicho = "Yes", maxL = 1)',
+         surCoin(ess_w, "Gender", dichotomies = "Social participation", valueDicho = "Yes", maxL = 1))
+sur_case("dichos", 'surCoin(ess, c("Gender","Age"), dichotomies = c("Social participation","Political participation"), valueDicho = "Yes", maxL = 1)',
+         surCoin(ess_w, c("Gender", "Age"), dichotomies = c("Social participation", "Political participation"),
+                 valueDicho = "Yes", maxL = 1))
+sur_case("dicho_inside", 'surCoin(ess, c("Social participation","Gender","Age"), dichotomies = "Social participation", valueDicho = "Yes", maxL = 1)',
+         surCoin(ess_w, c("Social participation", "Gender", "Age"), dichotomies = "Social participation",
+                 valueDicho = "Yes", maxL = 1))
+sur_case("links", 'surCoin(ess, vars3, frequency = TRUE, percentages = FALSE, procedures = c("Haberman","Jaccard"), lwidth = "Jaccard", lcolor = "Haberman", criteria = "Jaccard", minL = .2, language = "es", sort = TRUE, decreasing = FALSE, sortL = "Jaccard", main = "Survey")',
+         surCoin(ess_w, vars3, frequency = TRUE, percentages = FALSE, procedures = c("Haberman", "Jaccard"),
+                 lwidth = "Jaccard", lcolor = "Haberman", criteria = "Jaccard", minL = .2, language = "es",
+                 sort = TRUE, decreasing = FALSE, sortL = "Jaccard", main = "Survey"))
+sur_case("minimum", 'surCoin(ess, vars3, minimum = 150, maxL = 1)', surCoin(ess_w, vars3, minimum = 150, maxL = 1))
+sur_case("weight", 'surCoin(ess, c("Gender","Age","cweight"), weight = "cweight", maxL = 1)',
+         surCoin(ess_w, c("Gender", "Age", "cweight"), weight = "cweight", maxL = 1))
+sur_case("weight_vector", 'surCoin(ess[complete.cases(ess), ], vars3, weight = cweight, maxL = 1)',
+         surCoin(ess_cc, vars3, weight = ess_cc$cweight, maxL = 1))
+sur_case("subsample", 'surCoin(ess, vars3, subsample = TRUE, maxL = 1)', surCoin(ess_w, vars3, subsample = TRUE, maxL = 1))
+sur_case("pairwise", 'surCoin(ess, vars3, pairwise = TRUE, maxL = 1)', surCoin(ess_w, vars3, pairwise = TRUE, maxL = 1))
+sur_case("nodes", 'surCoin(ess, vars3, nodes = sur_nodes, color = "grp", maxL = 1)',
+         surCoin(ess_w, vars3, nodes = sur_nodes, color = "grp", maxL = 1))
+sur_case("layout_mc", 'surCoin(ess, vars3, layout = "mc", maxL = 1)', surCoin(ess_w, vars3, layout = "mc", maxL = 1))
+sur_case("layout_pc", 'surCoin(ess, vars3, layout = "pc")', surCoin(ess_w, vars3, layout = "pc"))
+sur_case("layout_two", 'surCoin(ess, vars3, layout = c("mc","pc"))', surCoin(ess_w, vars3, layout = c("mc", "pc")))
+sur_case("nodes_mc", 'surCoin(ess, vars3, nodes = sur_nodes, layout = "mc", maxL = 1)',
+         surCoin(ess_w, vars3, nodes = sur_nodes, layout = "mc", maxL = 1))
+sur_lay <- cbind(x = c(0, 1, 2, 3, 4, 5), y = c(5, 4, 3, 2, 1, 0))
+sur_case("layout_matrix", 'surCoin(ess, vars3, nodes = sur_nodes, layout = cbind(x = 0:5, y = 5:0), maxL = 1)',
+         surCoin(ess_w, vars3, nodes = sur_nodes, layout = sur_lay, maxL = 1))
+sur_case("commonlabel", 'surCoin(ess, c("Gender","Age"), commonlabel = "Gender", maxL = 1)',
+         surCoin(ess_w, c("Gender", "Age"), commonlabel = "Gender", maxL = 1))
+sur_case("exogenous", 'surCoin(ess, vars3, exogenous = c("Gender","Age"), maxL = 1)',
+         surCoin(ess_w, vars3, exogenous = c("Gender", "Age"), maxL = 1))
+sur_case("exogenous_filter", 'surCoin(ess, vars3, exogenous = "Gender", linkFilter = "Haberman > 0", maxL = 1)',
+         surCoin(ess_w, vars3, exogenous = "Gender", linkFilter = "Haberman > 0", maxL = 1))
+sur_case("spanish", 'surCoin(ess, vars3, language = "es", lwidth = "Haberman", ltext = "Z")',
+         surCoin(ess_w, vars3, language = "es", lwidth = "Haberman", ltext = "Z"))
+sur_case("metric", 'surCoin(ess_metric, c("Gender","Social participation"), metric = c("income","edu"), maxL = 1)',
+         surCoin(ess_m, c("Gender", "Social participation"), metric = c("income", "edu"), maxL = 1))
+sur_case("metric_pearson", 'surCoin(ess_metric, vars3, metric = "income", procedures = c("Pearson","Haberman"), criteria = "Pearson", minL = .05, maxL = Inf)',
+         surCoin(ess_m, vars3, metric = "income", procedures = c("Pearson", "Haberman"), criteria = "Pearson",
+                 minL = .05, maxL = Inf))
+sur_case("metric_pairwise", 'surCoin(ess_metric, c("Gender","Age"), metric = c("income","edu"), pairwise = TRUE, maxL = 1)',
+         surCoin(ess_m, c("Gender", "Age"), metric = c("income", "edu"), pairwise = TRUE, maxL = 1))
+sur_case("metric_weight", 'surCoin(ess_metric, c("Gender","Age","cweight"), metric = "edu", weight = "cweight", maxL = 1)',
+         surCoin(ess_m, c("Gender", "Age", "cweight"), metric = "edu", weight = "cweight", maxL = 1))
+sur_case("metric_nodes", 'surCoin(ess_metric, vars3, metric = c("income","edu"), nodes = sur_nodes_metric, color = "grp", maxL = 1)',
+         surCoin(ess_m, vars3, metric = c("income", "edu"), nodes = sur_nodes_metric, color = "grp", maxL = 1))
+sur_case("metric_nopct", 'surCoin(ess_metric, vars3, metric = "edu", percentages = FALSE, frequency = TRUE, maxL = 1)',
+         surCoin(ess_m, vars3, metric = "edu", percentages = FALSE, frequency = TRUE, maxL = 1))
+sur_case("metric_exogenous", 'surCoin(ess_metric, vars3, metric = "income", exogenous = c("Gender","income"), maxL = 1)',
+         surCoin(ess_m, vars3, metric = "income", exogenous = c("Gender", "income"), maxL = 1))
+coin_case("sur", 'surCoin(ess, c("Gender","Age"), coin = TRUE)', surCoin(ess_w, c("Gender", "Age"), coin = TRUE))
+coin_case("sur_weight", 'surCoin(ess, c("Gender","Age","cweight"), weight = "cweight", coin = TRUE)',
+          surCoin(ess_w, c("Gender", "Age", "cweight"), weight = "cweight", coin = TRUE))
+
+vars4 <- c("Gender", "Age", "Social participation", "Political participation")
+sur_case("cob_default", 'cobCoin(ess, c("Gender","Age","Social participation","Political participation"))', cobCoin(ess_w, vars4))
+sur_case("cob_args", 'cobCoin(ess, vars4, degree = 45, significance = .1, language = "es", main = "CoWeb")',
+         cobCoin(ess_w, vars4, degree = 45, significance = .1, language = "es", main = "CoWeb"))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

@@ -1,0 +1,5 @@
+"Source","Target","Jaccard","Haberman"
+"Gender:Female","Social participation:No",0.420525657071339,1.94125358489204
+"Gender:Male","Social participation:No",0.329588014981273,-1.94125358489204
+"Social participation:Yes","Gender:Male",0.301204819277108,1.87279993960693
+"Social participation:Yes","Gender:Female",0.270748299319728,-1.87279993960693

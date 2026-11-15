@@ -1,0 +1,10 @@
+"Source","Target","Haberman","p(Z)"
+"Gender:Male","Gender:Female",-31.6227766016838,1
+"Gender:Male","Social participation:Yes",1.87279993960693,0.0306938018822374
+"Gender:Female","Social participation:Yes",-1.87279993960693,0.969306198117763
+"income","edu",0.902362077370253,0.180310528037407
+"Gender:Male","income",-0.405355254239838,0.656254344242074
+"Gender:Male","edu",12.9915666884881,0
+"Social participation:Yes","income",0.0523630022520878,0.479128561118636
+"Social participation:Yes","edu",1.73760365815918,0.0372325006125659
+"Gender:Female","income",0.405355254239838,0.341838279022588

@@ -98,6 +98,50 @@ def lower_to_full(m: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(a, index=m.index, columns=m.columns)
 
 
+def as_list(value):
+    return value if isinstance(value, list) else [value]
+
+
+def compare_options(actual: dict, expected: dict, case: str):
+    """The options of a netCoin object against the ones R produced (same keys and values)."""
+    assert set(actual) == set(expected), f"{case}: {sorted(set(actual) ^ set(expected))}"
+    for key, value in expected.items():
+        got = actual[key]
+        if isinstance(got, dict) and isinstance(value, list):
+            got = list(got.values())          # R's plain() dropped the names of the planes
+        if isinstance(value, dict):
+            assert set(got) == set(value), f"{case}/{key}"
+            for k, v in value.items():
+                assert as_list(got[k]) == as_list(v), f"{case}/{key}/{k}"
+            continue
+        got, value = as_list(got), as_list(value)
+        assert len(got) == len(value), f"{case}/{key}: {got} != {value}"
+        for g, v in zip(got, value):
+            if isinstance(v, float):
+                assert g == pytest.approx(v), f"{case}/{key}"
+            else:
+                assert g == v, f"{case}/{key}: {g!r} != {v!r}"
+
+
+def compare_frame(actual: pd.DataFrame, expected: pd.DataFrame, label: str, rtol=1e-8,
+                  up_to_sign=(), skip=()):
+    """Same columns, rows and values (``skip``: columns not compared, ``up_to_sign``: sign free)."""
+    assert list(actual.columns) == list(expected.columns), f"{label}: columns {list(actual.columns)}"
+    assert len(actual) == len(expected), f"{label}: {len(actual)} rows, R has {len(expected)}"
+    for col in expected.columns:
+        if col in skip:
+            continue
+        a, e = actual[col].reset_index(drop=True), expected[col].reset_index(drop=True)
+        if pd.api.types.is_numeric_dtype(e) and pd.api.types.is_numeric_dtype(a):
+            a, e = a.astype(float), e.astype(float)
+            if col in up_to_sign and np.nansum(np.abs(a + e)) < np.nansum(np.abs(a - e)):
+                a = -a
+            np.testing.assert_allclose(a, e, rtol=rtol, atol=1e-7, equal_nan=True, err_msg=f"{label}/{col}")
+        else:
+            norm = lambda s: s.map(lambda x: "NA" if pd.isna(x) else str(x))
+            assert norm(a).tolist() == norm(e).tolist(), f"{label}/{col}"
+
+
 def known_gap(request, gaps: dict, key: str):
     """Mark the running test as an expected failure when ``key`` is a known gap.
 

@@ -121,6 +121,24 @@ net = net.add(color="%")                          # a copy with some arguments c
 net.plot()                                        # opens it in the browser
 ```
 
+### From a survey
+
+`sur_coin` takes a table of cases (one column per question) and makes every category a node
+(`"question:answer"`); the links tell which categories go together more or less than expected.
+Quantitative variables (`metric`) become nodes too and are correlated with the categories.
+`cob_coin` keeps the significant links between different questions and puts the nodes on a
+circle (a CoWeb graph).
+
+```python
+from netcoin import sur_coin, cob_coin
+
+net = sur_coin(survey, ["sex", "age", "works"], metric="income",
+               lwidth="Haberman", lcolor="Haberman", link_bipolar=True, color="variable",
+               commonlabel="sex")
+web = cob_coin(survey, ["sex", "age", "works"], degree=90, significance=0.05)
+web.plot()
+```
+
 ### Drawing options
 
 `netCoin` has the arguments of the R function, in `snake_case`; the tables are DataFrames
@@ -207,6 +225,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Dichotomising categorical data    | `dichotomize(...)`                         |
 | Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
 | Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
+| Networks from a survey, CoWeb     | `sur_coin(...)`, `cob_coin(...)`           |
 | Layouts from coincidences         | `layout_mca(...)`, `layout_pca(...)`       |
 
 Visualisations are powered by D3.js. All required web assets (`d3.min.js`,

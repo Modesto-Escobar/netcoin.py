@@ -66,6 +66,34 @@ def layout_pca(coincidences: Coin | pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(_fix_signs(coords), index=matrix.index, columns=["F1", "F2"])
 
 
+def layout_special(layout, special: dict):
+    """Replace the layout names that only the calling function can compute.
+
+    Port of ``layoutSpecial``. ``special`` maps a two-letter code (``"mc"``, ``"pc"``...) to a
+    function without arguments that returns the coordinates. A single name comes back as the
+    coordinates; among several (a list of names or a dict), the coordinates take the place of
+    the name and keep it as the name of the plane. Anything else is left as it is, to be
+    computed later (``"fr"``, ``"circle"``...).
+    """
+    if isinstance(layout, str):
+        items, single = [(None, layout)], True
+    elif isinstance(layout, (list, tuple)) and all(isinstance(x, str) for x in layout):
+        items, single = [(None, x) for x in layout], len(layout) == 1
+    elif isinstance(layout, dict):
+        items, single = list(layout.items()), False
+    else:
+        return layout
+    out = {}
+    for label, value in items:
+        if isinstance(value, str) and value[:2].lower() in special:
+            label = label or value
+            value = special[value[:2].lower()]()
+        elif label is None:
+            label = value if isinstance(value, str) else str(len(out) + 1)
+        out[label] = value
+    return next(iter(out.values())) if single else out
+
+
 # ---------------------------------------------------------- circle and grid ----
 def layout_circle(nodes: pd.DataFrame, items: Sequence | None = None, deg: float = 0,
                   name: str | None = None) -> pd.DataFrame:

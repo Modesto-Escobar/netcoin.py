@@ -8,7 +8,7 @@ import pandas as pd
 
 from .coincidence import as_nodes, coin
 from .core import netCoin
-from .layouts import layout_mca, layout_pca
+from .layouts import layout_mca, layout_pca, layout_special
 from .similarity import edge_column_name, edge_list
 from .utils import frequencyList, getByLanguage, nameList
 
@@ -65,15 +65,13 @@ def all_net(
     sort_links, decreasing_links
         Order of the links (``sortL`` and ``decreasingL`` in R).
     igraph : bool
-        Return an ``igraph.Graph`` instead (not available yet).
+        Return an ``igraph.Graph`` instead (needs the optional ``igraph`` package).
     **netcoin_args
         Anything else is passed to :class:`netCoin` (``name``, ``nodes``,
         ``language``, ``color``, ``layout``...). ``layout`` can also be
         ``"mc"`` (correspondence analysis) or ``"pc"`` (principal components of
         the correlations); ``directory`` writes the web page.
     """
-    if igraph:
-        raise NotImplementedError("igraph output arrives with the igraph conversion functions")
     if not isinstance(incidences, pd.DataFrame):
         raise TypeError("incidences must be a DataFrame")
 
@@ -127,11 +125,16 @@ def all_net(
         if args.get(key):
             args[key] = edge_column_name(args[key])
 
-    layout = args.get("layout")
-    if isinstance(layout, str):
-        if layout == "mc":
-            args["layout"] = layout_mca(data[cooc.labels]).reindex(args["nodes"][name])
-        elif layout == "pc":
-            args["layout"] = layout_pca(cooc).reindex(args["nodes"][name])
+    if args.get("layout") is not None:
+        names = list(args["nodes"][name])
+        args["layout"] = layout_special(args["layout"], {
+            "mc": lambda: layout_mca(data[cooc.labels]).reindex(names),
+            "pc": lambda: layout_pca(cooc).reindex(names),
+        })
     args["scenarios"] = cooc.n
-    return netCoin(**args)
+    net = netCoin(**args)
+    if igraph:
+        from .igraph_io import to_igraph
+
+        return to_igraph(net)
+    return net

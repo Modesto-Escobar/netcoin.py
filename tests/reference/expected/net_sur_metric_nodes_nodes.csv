@@ -1,0 +1,6 @@
+"name","%","variable","grp","mean","min","max"
+"Gender:Female",53.5,"Gender","a",0.535,0,1
+"Gender:Male",46.5,"Gender","a",0.465,0,1
+"Social participation:Yes",39.9,"Social participation","c",0.399,0,1
+"income",45.5666518245235,"income","m",53.3978894472362,21,92.1
+"edu",48.5778894472362,"edu","m",7.82934673366834,2,14

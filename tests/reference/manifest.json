@@ -756,6 +756,130 @@
     "pajek": {
       "call": "savePajek(...)",
       "files": ["pajek_basic", "pajek_project"]
+    },
+    "net_sur_default": {
+      "call": "surCoin(ess, c(\"Gender\",\"Age\",\"Social participation\"))",
+      "files": ["net_sur_default_nodes", "net_sur_default_links"]
+    },
+    "net_sur_one_dicho": {
+      "call": "surCoin(ess, \"Gender\", dichotomies = \"Social participation\", valueDicho = \"Yes\", maxL = 1)",
+      "files": ["net_sur_one_dicho_nodes", "net_sur_one_dicho_links"]
+    },
+    "net_sur_dichos": {
+      "call": "surCoin(ess, c(\"Gender\",\"Age\"), dichotomies = c(\"Social participation\",\"Political participation\"), valueDicho = \"Yes\", maxL = 1)",
+      "files": ["net_sur_dichos_nodes", "net_sur_dichos_links"]
+    },
+    "net_sur_dicho_inside": {
+      "call": "surCoin(ess, c(\"Social participation\",\"Gender\",\"Age\"), dichotomies = \"Social participation\", valueDicho = \"Yes\", maxL = 1)",
+      "files": ["net_sur_dicho_inside_nodes", "net_sur_dicho_inside_links"]
+    },
+    "net_sur_links": {
+      "call": "surCoin(ess, vars3, frequency = TRUE, percentages = FALSE, procedures = c(\"Haberman\",\"Jaccard\"), lwidth = \"Jaccard\", lcolor = \"Haberman\", criteria = \"Jaccard\", minL = .2, language = \"es\", sort = TRUE, decreasing = FALSE, sortL = \"Jaccard\", main = \"Survey\")",
+      "files": ["net_sur_links_nodes", "net_sur_links_links"]
+    },
+    "net_sur_minimum": {
+      "call": "surCoin(ess, vars3, minimum = 150, maxL = 1)",
+      "files": ["net_sur_minimum_nodes", "net_sur_minimum_links"]
+    },
+    "net_sur_weight": {
+      "call": "surCoin(ess, c(\"Gender\",\"Age\",\"cweight\"), weight = \"cweight\", maxL = 1)",
+      "files": ["net_sur_weight_nodes", "net_sur_weight_links"]
+    },
+    "net_sur_weight_vector": {
+      "call": "surCoin(ess[complete.cases(ess), ], vars3, weight = cweight, maxL = 1)",
+      "files": ["net_sur_weight_vector_nodes", "net_sur_weight_vector_links"]
+    },
+    "net_sur_subsample": {
+      "call": "surCoin(ess, vars3, subsample = TRUE, maxL = 1)",
+      "files": ["net_sur_subsample_nodes", "net_sur_subsample_links"]
+    },
+    "net_sur_pairwise": {
+      "call": "surCoin(ess, vars3, pairwise = TRUE, maxL = 1)",
+      "files": ["net_sur_pairwise_nodes", "net_sur_pairwise_links"]
+    },
+    "net_sur_nodes": {
+      "call": "surCoin(ess, vars3, nodes = sur_nodes, color = \"grp\", maxL = 1)",
+      "files": ["net_sur_nodes_nodes", "net_sur_nodes_links"]
+    },
+    "net_sur_layout_mc": {
+      "call": "surCoin(ess, vars3, layout = \"mc\", maxL = 1)",
+      "files": ["net_sur_layout_mc_nodes", "net_sur_layout_mc_links"]
+    },
+    "net_sur_layout_pc": {
+      "call": "surCoin(ess, vars3, layout = \"pc\")",
+      "files": ["net_sur_layout_pc_nodes", "net_sur_layout_pc_links"]
+    },
+    "net_sur_layout_two": {
+      "call": "surCoin(ess, vars3, layout = c(\"mc\",\"pc\"))",
+      "files": ["net_sur_layout_two_nodes", "net_sur_layout_two_links"]
+    },
+    "net_sur_nodes_mc": {
+      "call": "surCoin(ess, vars3, nodes = sur_nodes, layout = \"mc\", maxL = 1)",
+      "files": ["net_sur_nodes_mc_nodes", "net_sur_nodes_mc_links"]
+    },
+    "net_sur_layout_matrix": {
+      "call": "surCoin(ess, vars3, nodes = sur_nodes, layout = cbind(x = 0:5, y = 5:0), maxL = 1)",
+      "files": ["net_sur_layout_matrix_nodes", "net_sur_layout_matrix_links"]
+    },
+    "net_sur_commonlabel": {
+      "call": "surCoin(ess, c(\"Gender\",\"Age\"), commonlabel = \"Gender\", maxL = 1)",
+      "files": ["net_sur_commonlabel_nodes", "net_sur_commonlabel_links"]
+    },
+    "net_sur_exogenous": {
+      "call": "surCoin(ess, vars3, exogenous = c(\"Gender\",\"Age\"), maxL = 1)",
+      "files": ["net_sur_exogenous_nodes", "net_sur_exogenous_links"]
+    },
+    "net_sur_exogenous_filter": {
+      "call": "surCoin(ess, vars3, exogenous = \"Gender\", linkFilter = \"Haberman > 0\", maxL = 1)",
+      "files": ["net_sur_exogenous_filter_nodes", "net_sur_exogenous_filter_links"]
+    },
+    "net_sur_spanish": {
+      "call": "surCoin(ess, vars3, language = \"es\", lwidth = \"Haberman\", ltext = \"Z\")",
+      "files": ["net_sur_spanish_nodes", "net_sur_spanish_links"]
+    },
+    "net_sur_metric": {
+      "call": "surCoin(ess_metric, c(\"Gender\",\"Social participation\"), metric = c(\"income\",\"edu\"), maxL = 1)",
+      "files": ["net_sur_metric_nodes", "net_sur_metric_links"]
+    },
+    "net_sur_metric_pearson": {
+      "call": "surCoin(ess_metric, vars3, metric = \"income\", procedures = c(\"Pearson\",\"Haberman\"), criteria = \"Pearson\", minL = .05, maxL = Inf)",
+      "files": ["net_sur_metric_pearson_nodes", "net_sur_metric_pearson_links"]
+    },
+    "net_sur_metric_pairwise": {
+      "call": "surCoin(ess_metric, c(\"Gender\",\"Age\"), metric = c(\"income\",\"edu\"), pairwise = TRUE, maxL = 1)",
+      "files": ["net_sur_metric_pairwise_nodes", "net_sur_metric_pairwise_links"]
+    },
+    "net_sur_metric_weight": {
+      "call": "surCoin(ess_metric, c(\"Gender\",\"Age\",\"cweight\"), metric = \"edu\", weight = \"cweight\", maxL = 1)",
+      "files": ["net_sur_metric_weight_nodes", "net_sur_metric_weight_links"]
+    },
+    "net_sur_metric_nodes": {
+      "call": "surCoin(ess_metric, vars3, metric = c(\"income\",\"edu\"), nodes = sur_nodes_metric, color = \"grp\", maxL = 1)",
+      "files": ["net_sur_metric_nodes_nodes", "net_sur_metric_nodes_links"]
+    },
+    "net_sur_metric_nopct": {
+      "call": "surCoin(ess_metric, vars3, metric = \"edu\", percentages = FALSE, frequency = TRUE, maxL = 1)",
+      "files": ["net_sur_metric_nopct_nodes", "net_sur_metric_nopct_links"]
+    },
+    "net_sur_metric_exogenous": {
+      "call": "surCoin(ess_metric, vars3, metric = \"income\", exogenous = c(\"Gender\",\"income\"), maxL = 1)",
+      "files": ["net_sur_metric_exogenous_nodes", "net_sur_metric_exogenous_links"]
+    },
+    "coin_sur": {
+      "call": "surCoin(ess, c(\"Gender\",\"Age\"), coin = TRUE)",
+      "files": "coin_sur"
+    },
+    "coin_sur_weight": {
+      "call": "surCoin(ess, c(\"Gender\",\"Age\",\"cweight\"), weight = \"cweight\", coin = TRUE)",
+      "files": "coin_sur_weight"
+    },
+    "net_sur_cob_default": {
+      "call": "cobCoin(ess, c(\"Gender\",\"Age\",\"Social participation\",\"Political participation\"))",
+      "files": ["net_sur_cob_default_nodes", "net_sur_cob_default_links"]
+    },
+    "net_sur_cob_args": {
+      "call": "cobCoin(ess, vars4, degree = 45, significance = .1, language = \"es\", main = \"CoWeb\")",
+      "files": ["net_sur_cob_args_nodes", "net_sur_cob_args_links"]
     }
   }
 }

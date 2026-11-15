@@ -1,0 +1,13 @@
+"Source","Target","Haberman","p(Z)"
+"Gender:Female","Age:40-49",2.04405086988101,0.0206050275402531
+"Gender:Male","Age:40-49",-2.04405086988101,0.979394972459747
+"Age:15-29","Political participation:No",2.53568706957547,0.0056870094508763
+"Age:15-29","Political participation:Yes",-2.69192862484806,0.996388667907837
+"Age:50-59","Social participation:No",-2.39636868412238,0.991629363007343
+"Age:50-59","Social participation:Yes",2.42492469055181,0.00774391676000408
+"Age:60-69","Social participation:No",2.07741658783407,0.0190089398390512
+"Age:60-69","Social participation:Yes",-2.04711274703678,0.979546031536167
+"Social participation:No","Political participation:No",11.7857353862018,0
+"Social participation:No","Political participation:Yes",-11.7122780823335,1
+"Social participation:Yes","Political participation:No",-11.6866044929235,1
+"Social participation:Yes","Political participation:Yes",11.7571568691898,0

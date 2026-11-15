@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from netcoin import (cal_centr, layout_circle, layout_grid, netCoin, save_pajek, to_igraph)
-from conftest import EXPECTED, read_expected, read_input
+from conftest import EXPECTED, as_list, compare_frame, compare_options, read_expected, read_input
 
 igraph = pytest.importorskip("igraph")
 
@@ -21,43 +21,9 @@ def _ref(case):
     return json.loads((EXPECTED / f"net_{case}.json").read_text(encoding="utf-8"))
 
 
-def _as_list(value):
-    return value if isinstance(value, list) else [value]
-
-
-def _compare_options(actual: dict, expected: dict, case: str):
-    assert set(actual) == set(expected), f"{case}: {sorted(set(actual) ^ set(expected))}"
-    for key, value in expected.items():
-        got = actual[key]
-        if isinstance(got, dict) and isinstance(value, list):
-            got = list(got.values())          # R's plain() dropped the names of the planes
-        if isinstance(value, dict):
-            assert set(got) == set(value), f"{case}/{key}"
-            for k, v in value.items():
-                assert _as_list(got[k]) == _as_list(v), f"{case}/{key}/{k}"
-            continue
-        got, value = _as_list(got), _as_list(value)
-        assert len(got) == len(value), f"{case}/{key}: {got} != {value}"
-        for g, v in zip(got, value):
-            if isinstance(v, float):
-                assert g == pytest.approx(v), f"{case}/{key}"
-            else:
-                assert g == v, f"{case}/{key}: {g!r} != {v!r}"
-
-
-def _compare_frame(actual: pd.DataFrame, expected: pd.DataFrame, label: str, rtol=1e-8, up_to_sign=()):
-    assert list(actual.columns) == list(expected.columns), f"{label}: columns {list(actual.columns)}"
-    assert len(actual) == len(expected), f"{label}: {len(actual)} rows, R has {len(expected)}"
-    for col in expected.columns:
-        a, e = actual[col].reset_index(drop=True), expected[col].reset_index(drop=True)
-        if pd.api.types.is_numeric_dtype(e) and pd.api.types.is_numeric_dtype(a):
-            a, e = a.astype(float), e.astype(float)
-            if col in up_to_sign and np.nansum(np.abs(a + e)) < np.nansum(np.abs(a - e)):
-                a = -a
-            np.testing.assert_allclose(a, e, rtol=rtol, atol=1e-7, equal_nan=True, err_msg=f"{label}/{col}")
-        else:
-            norm = lambda s: s.map(lambda x: "NA" if pd.isna(x) else str(x))
-            assert norm(a).tolist() == norm(e).tolist(), f"{label}/{col}"
+_as_list = as_list
+_compare_options = compare_options
+_compare_frame = compare_frame
 
 
 CASES = {

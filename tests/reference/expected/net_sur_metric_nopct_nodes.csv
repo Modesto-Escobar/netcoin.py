@@ -1,0 +1,12 @@
+"name","frequency","variable","min","max","mean","%"
+"Gender:Female",535,"Gender",0,1,NA,NA
+"Gender:Male",465,"Gender",0,1,NA,NA
+"Age:15-29",175,"Age",0,1,NA,NA
+"Age:30-39",144,"Age",0,1,NA,NA
+"Age:40-49",177,"Age",0,1,NA,NA
+"Age:50-59",154,"Age",0,1,NA,NA
+"Age:60-69",189,"Age",0,1,NA,NA
+"Age:70 and +",159,"Age",0,1,NA,NA
+"Social participation:No",600,"Social participation",0,1,NA,NA
+"Social participation:Yes",399,"Social participation",0,1,NA,NA
+"edu",NA,"edu",2,14,7.8278,48.565

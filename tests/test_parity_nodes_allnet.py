@@ -162,9 +162,15 @@ def test_all_net_pairwise_with_missing_values_works():
     assert net.ncount() == 13
 
 
-def test_all_net_igraph_not_available_yet():
-    with pytest.raises(NotImplementedError):
-        all_net(read_input("galapagos"), igraph=True)
+def test_all_net_returns_an_igraph_graph():
+    igraph = pytest.importorskip("igraph")
+    graph = all_net(read_input("galapagos"), igraph=True)
+    assert isinstance(graph, igraph.Graph) and graph.vcount() == 13
+
+
+def test_all_net_layout_as_a_list_of_names():
+    net = all_net(read_input("dice"), layout=["mc", "pc"])
+    assert list(net.layouts) == ["mc", "pc"]
 
 
 # --------------------------------------------------------------- netCoin.add ----

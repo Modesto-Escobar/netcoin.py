@@ -723,7 +723,7 @@ class netCoin:
         built with; the rest is kept. The original is not modified.
         """
         changes = _normalize_legacy(kwargs, strict=False)
-        unknown = set(changes) - set(self._args)
+        unknown = set(changes) - set(self._args) - {"directory"}
         if unknown:
             raise TypeError("unknown netCoin arguments: " + ", ".join(sorted(unknown)))
         arguments = deepcopy(self._args)

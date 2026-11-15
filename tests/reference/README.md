@@ -37,7 +37,22 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 | `allNet(..., layout = "mc")` | The layout is computed on all the variables, so it does not line up with the nodes if `minimum`, `maximum` or `sort` change them. Python uses the variables that are nodes. |
 | `netCoin(node_filter / degreeFilter)` | The helper `hideLinks()` changes a local copy of the links and has no effect: the links of hidden nodes are never marked `hidden` in the object (the page hides them). Python does the same so that both objects are equal. |
 | `cluster_edge_betweenness` | The result is the unweighted one even if a `weight` attribute exists. Python follows it. |
+| `surCoin(metric = )`, column `p(Z)` | The t statistic of a correlation is computed as `r / sqrt((1 - r) / (n - 2))`; the usual one is `r * sqrt((n - 2) / (1 - r^2))`. Python uses the usual one, so the `p(Z)` of the links of a metric variable differs from R (the tests leave those cells out and check them against a direct calculation). `n` is `nrow(incidences)` in both. |
+| `surCoin(weight = <vector>)` with incomplete cases | `na.omit(cbind(data, weight))` drops the rows with a missing value but the vector of weights keeps its length, so the weights no longer match the cases. Python drops the weights with their cases (like `weight = "<column>"`, which R does handle). |
+| `surCoin(nodes = , layout = "mc")` (or `"pc"`) | `merge()` sorts the nodes alphabetically but the coordinates stay in the order of the incidences, so each node gets the coordinates of another one. Python aligns them by name (`nodes_mc` is a strict xfail). `allNet` has the same flaw. |
+| `surCoin(nodes = , metric = )` | The metric variables listed in `nodes` are reported as "not present in the data frame". Python does not mention them. |
+| `surCoin(metric = )` with an undefined correlation | A constant variable gives `NaN`, which turns into rows of `NA` in the links. Python leaves those links out. |
+| `cobCoin(dir = )` | The page is written by the inner `surCoin` before the links are filtered. Python writes the final network. |
 | group numbers of communities | The numbers `G.1`, `G.2`... come from the algorithm's internals; the groups are the same but may be numbered differently (the tests compare the partition). |
+
+### Replicated on purpose
+
+`surCoin` turns a missing value of a categorical variable into a case with none of its categories
+(a row of zeros), also with `pairwise = TRUE`, so the cases are not dropped and `pairwise` only
+changes the correlations of the metric variables. With a single variable and a dichotomy
+the categories get no `variable:` prefix (`Female`, `Male`) and `variable` repeats the name. With
+metric variables and `layout = "mc"`/`"pc"` the layout is refused with a warning (there are no
+coordinates for the metric nodes).
 
 ## Differences that come from the igraph version
 

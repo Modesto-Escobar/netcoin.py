@@ -1,0 +1,12 @@
+"name","%","variable","mean","min","max"
+"Gender:Female",53.5,"Gender",0.535,0,1
+"Gender:Male",46.5,"Gender",0.465,0,1
+"Age:15-29",17.5,"Age",0.175,0,1
+"Age:30-39",14.4,"Age",0.144,0,1
+"Age:40-49",17.7,"Age",0.177,0,1
+"Age:50-59",15.4,"Age",0.154,0,1
+"Age:60-69",18.9,"Age",0.189,0,1
+"Age:70 and +",15.9,"Age",0.159,0,1
+"Social participation:No",60,"Social participation",0.6,0,1
+"Social participation:Yes",39.9,"Social participation",0.399,0,1
+"income",45.5666518245235,"income",53.3978894472362,21,92.1
