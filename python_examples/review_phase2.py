@@ -7,17 +7,23 @@
 The same steps in R are in review_phase2.R, to compare the numbers.
 """
 import os
+import re
 import sys
 
 import pandas as pd
 
 # use the netcoin of this repository, even if another copy is installed in the environment
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+_f = globals().get("__file__", os.path.join(os.getcwd(), "python_examples", "x.py"))
+_f = _f[1:] if re.match(r"[/\\][A-Za-z]:", _f) else _f
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(_f)), ".."))
 
 from netcoin import (all_net, as_nodes, coin, coocur, dichotomize, edge_list,
                      expected_list, prop_coin, sim)
 
-here = os.path.dirname(os.path.abspath(__file__))
+here = globals().get("__file__", os.path.join(os.getcwd(), "python_examples", "x.py"))
+if re.match(r"[/\\][A-Za-z]:", here):      # some consoles give '/d:/...'
+    here = here[1:]
+here = os.path.dirname(os.path.abspath(here))
 out = os.path.join(here, "tmp")                      # ignored by git
 show = "--open" in sys.argv
 pd.set_option("display.width", 160, "display.max_columns", 12)

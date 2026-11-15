@@ -1,6 +1,15 @@
 from netcoin import netCoin, multigraphCreate
-import csv, os
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+import csv, os, re
+# The example reads ./icons and writes ./tmp next to this file. __file__ only exists when the
+# file is run as a script, and some consoles give it as '/d:/Documents/...' (leading slash),
+# which Windows would read as 'd:\d:\Documents'.
+here = globals().get("__file__", "")
+if re.match(r"[/\\][A-Za-z]:", here):
+  here = here[1:]
+if os.path.isfile(here):
+  os.chdir(os.path.dirname(os.path.abspath(here)))
+elif os.path.isdir("python_examples"):   # console opened at the repository root
+  os.chdir("python_examples")
 
 
 l = ['Source','Target','Haberman','Z']
