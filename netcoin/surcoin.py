@@ -410,7 +410,7 @@ def _add_metric(nodes_out, links, data, incidences, metric_vars, nodes, name, pe
             row = nodes[nodes[name].astype(str) == col].iloc[0]
             for column in nodes.columns:
                 if column not in extra.columns:
-                    extra[column] = np.nan
+                    extra[column] = nodes[column].iloc[:0].reindex(extra.index)   # empty, of the dtype of the column
                 extra.loc[extra[name] == col, column] = row[column]
     nodes_out = pd.concat([nodes_out, extra], ignore_index=True, sort=False)
 

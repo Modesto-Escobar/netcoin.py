@@ -111,7 +111,7 @@ def caring_read_file(filepath: str) -> pd.DataFrame:
     data.columns = [str(c).replace('"', "'") for c in data.columns]
     for column in data.columns:
         series = data[column]
-        if series.dtype == object or isinstance(series.dtype, pd.CategoricalDtype):
+        if series.dtype == object or pd.api.types.is_string_dtype(series.dtype) or isinstance(series.dtype, pd.CategoricalDtype):
             numbers = pd.to_numeric(series.astype(object), errors="coerce")
             if numbers.notna().sum() == series.notna().sum() and series.notna().any():
                 data[column] = numbers

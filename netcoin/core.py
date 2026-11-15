@@ -128,7 +128,8 @@ def set_attr_by_value_key(label: str, item, items: pd.DataFrame | None):
     checked = {}
     for key, mapping in item.items():
         if items is None or key not in items.columns or not (
-                items[key].dtype == object or isinstance(items[key].dtype, pd.CategoricalDtype)):
+                items[key].dtype == object or pd.api.types.is_string_dtype(items[key].dtype)
+                or isinstance(items[key].dtype, pd.CategoricalDtype)):
             warnings.warn(f"{label}: the names in the list must match character columns of the items, "
                           f"but '{key}' doesn't")
         elif not isinstance(mapping, dict):

@@ -96,7 +96,7 @@ def all_net(
     elif weight is not None:
         weight = np.asarray(weight, dtype=float)
     if not pairwise:  # incomplete cases are dropped, with their weights
-        complete = ~data.isna().any(axis=1).to_numpy()
+        complete = ~data.isna().any(axis=1).to_numpy().copy()
         data = data[complete]
         weight = weight[complete] if weight is not None else None
     data = data.loc[:, data.sum(axis=0, skipna=True) > 0]

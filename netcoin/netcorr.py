@@ -446,7 +446,7 @@ def net_corr(
     if not_numeric:
         raise ValueError("variables must be quantitative: " + ", ".join(map(str, not_numeric)))
 
-    keep = np.ones(len(variables), bool) if pairwise else variables.notna().all(axis=1).to_numpy()
+    keep = np.ones(len(variables), bool) if pairwise else variables.notna().all(axis=1).to_numpy().copy()
     if w is not None:
         keep &= ~np.isnan(w)
         w = w[keep]

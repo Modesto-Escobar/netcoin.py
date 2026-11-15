@@ -55,7 +55,7 @@ def _factor(values, mask=None) -> tuple[np.ndarray, list[str]]:
 def pair_table(pred, ref, weights=None, who: str = "pairTable") -> tuple[pd.DataFrame, int, int]:
     """The contingency table of a pair of classifications (rows: predicted, columns: the model)."""
     pred, ref = pd.Series(pred).reset_index(drop=True), pd.Series(ref).reset_index(drop=True)
-    ok = (pred.notna() & ref.notna()).to_numpy()
+    ok = (pred.notna() & ref.notna()).to_numpy().copy()
     if weights is not None:
         weights = np.asarray(weights, dtype=float)
         if len(weights) != len(pred):

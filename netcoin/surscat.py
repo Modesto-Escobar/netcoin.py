@@ -130,7 +130,7 @@ def _group_weights(net, column: str, w=None) -> pd.DataFrame:
 def _group_means(x: pd.DataFrame, w: pd.DataFrame) -> pd.DataFrame:
     out = pd.DataFrame(np.nan, index=w.columns, columns=x.columns)
     for col in x.columns:
-        ok = x[col].notna().to_numpy()
+        ok = x[col].notna().to_numpy().copy()
         weights = w.to_numpy()[ok]
         total = weights.sum(axis=0)
         with np.errstate(invalid="ignore", divide="ignore"):
@@ -446,7 +446,7 @@ def sur_scat(
     if not set(v_patterns) <= set(variables):
         raise ValueError("v_patterns must be a subset of variables")
     variables = list(dict.fromkeys(variables + [a["variable"] for a in (x_axis, y_axis) if a["variable"]]))
-    keep = data[variables].notna().all(axis=1).to_numpy()
+    keep = data[variables].notna().all(axis=1).to_numpy().copy()
     if weight is not None:
         keep &= ~np.isnan(weight)
     if keep.sum() < len(data) / 2:

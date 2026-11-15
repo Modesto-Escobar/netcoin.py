@@ -232,11 +232,11 @@ def bar_coin(
         all_vars = [v for v in all_vars if v != weights_column]
         variables = [v for v in variables if v != weights_column]
         dichotomies = [v for v in dichotomies if v != weights_column]
-        complete = data[all_vars].notna().all(axis=1).to_numpy()
+        complete = data[all_vars].notna().all(axis=1).to_numpy().copy()
         weights = data[weights_column].to_numpy(dtype=float)[complete]
         data = data.loc[complete, all_vars]
     else:
-        complete = data[all_vars].notna().all(axis=1).to_numpy()
+        complete = data[all_vars].notna().all(axis=1).to_numpy().copy()
         if weight is not None:
             weight = np.asarray(weight, dtype=float)
             if len(weight) != len(data):
