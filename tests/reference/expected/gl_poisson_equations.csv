@@ -1,0 +1,2 @@
+"model","family","n","n_obs","r2","r2.mcfadden","r2.nagelkerke","logLik","aic","bic","deviance","null.deviance","df.residual"
+"cnt ~ Gender + income","poisson",995,995,0.028,0.01,0.033,-1538.2,3082.4,3097.11,1107.29,1139.18,992

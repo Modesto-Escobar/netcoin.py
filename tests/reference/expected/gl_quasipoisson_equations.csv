@@ -1,0 +1,2 @@
+"model","family","n","n_obs","r2","r2.mcfadden","r2.nagelkerke","logLik","aic","bic","deviance","null.deviance","df.residual"
+"cnt ~ Gender + Age","quasipoisson",995,995,0.018,NA,0.03,NA,NA,NA,1118.78,1139.18,988

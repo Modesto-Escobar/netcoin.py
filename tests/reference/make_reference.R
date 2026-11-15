@@ -860,5 +860,49 @@ sc_case("columns", 'surScat(ess, c(V4, "cweight"), active = V4, columns = c("_nc
 sc_case("none", 'surScat(ess, V4, nclusters = 0)', suppressMessages(surScat(ess_w, V4, nclusters = 0)))
 sc_case("many", 'surScat(ess, V4, nclusters = c(2, 5, 3))', suppressMessages(surScat(ess_w, V4, nclusters = c(2, 5, 3))))
 
+# ------------------------------------------------------------------ glmCoin ----
+set.seed(11)
+gd <- ess_m
+gd$cnt <- rpois(nrow(gd), exp(0.5 + 0.015 * (gd$income - 50) - 0.2 * (gd$Gender == "Male")))
+gd$pos <- round(rgamma(nrow(gd), shape = 3, rate = 3 / (5 + 0.1 * gd$edu + 0.5 * (gd$Age == "70 and +"))), 3)
+gd$flag <- as.integer(runif(nrow(gd)) < plogis(-0.3 + 0.1 * (gd$edu - 7) + 0.3 * (gd$Gender == "Female")))
+write_csv(gd, "glm_data", dir_in)
+gdf <- gd
+for (cn in c("Gender", "Age", "Social participation", "Political participation")) gdf[[cn]] <- factor(gdf[[cn]])
+gl_case <- function(id, call_txt, expr) {
+  tryCatch({
+    N <- suppressWarnings(expr)
+    net_case(paste0("gl_", id), call_txt, N)
+    eq <- as.data.frame(N$equations); rownames(eq) <- NULL
+    write_csv(eq, paste0("gl_", id, "_equations"), dir_out)
+    cf <- lapply(N$coeffs, function(d) { a <- list(table = as.data.frame(d), family = attr(d, "family"), link = attr(d, "link"),
+                                                    sd.y = attr(d, "sd.y"), latent.sd = as.list(attr(d, "latent.sd"))); a })
+    write_json(cf, file.path(dir_out, paste0("gl_", id, "_coeffs.json")), auto_unbox = TRUE, digits = NA, na = "null", dataframe = "columns")
+  }, error = function(e) message("glmCoin case ", id, " FAILED: ", conditionMessage(e)))
+}
+gl_case("lm", 'glmCoin("income ~ Gender + Age", data)', glmCoin("income ~ Gender + Age", gdf))
+gl_case("lm_inter", 'glmCoin("income ~ Gender*Age + edu", data)', glmCoin("income ~ Gender*Age + edu", gdf))
+gl_case("lm_numint", 'glmCoin("income ~ Gender*edu", data)', glmCoin("income ~ Gender*edu", gdf))
+gl_case("logit", 'glmCoin("Social participation ~ Gender + income, binomial", data, pmax = .5)',
+        glmCoin("Social participation ~ Gender + income, binomial", gdf, pmax = .5))
+gl_case("logit01", 'glmCoin("flag ~ Gender + edu + Age, binomial", data, pmax = .5)', glmCoin("flag ~ Gender + edu + Age, binomial", gdf, pmax = .5))
+gl_case("logit_inter", 'glmCoin("Political participation ~ Gender*Social participation + edu, binomial", data, pmax = .5)',
+        glmCoin("Political participation ~ Gender*Social participation + edu, binomial", gdf, pmax = .5))
+gl_case("poisson", 'glmCoin("cnt ~ Gender + income, poisson", data, pmax = .5)', glmCoin("cnt ~ Gender + income, poisson", gdf, pmax = .5))
+gl_case("quasipoisson", 'glmCoin("cnt ~ Gender + Age, quasipoisson", data, pmax = .5)', glmCoin("cnt ~ Gender + Age, quasipoisson", gdf, pmax = .5))
+gl_case("gamma", 'glmCoin("pos ~ Age + edu, Gamma", data, pmax = .5)', glmCoin("pos ~ Age + edu, Gamma", gdf, pmax = .5))
+gl_case("weights", 'glmCoin("income ~ Gender + Age", data, weights = "cweight")', glmCoin("income ~ Gender + Age", gdf, weights = "cweight"))
+gl_case("weights_logit", 'glmCoin("Social participation ~ Gender + edu, binomial", data, weights = "cweight", pmax = .5)',
+        glmCoin("Social participation ~ Gender + edu, binomial", gdf, weights = "cweight", pmax = .5))
+gl_case("robust", 'glmCoin("income ~ Gender + Age", data, robust = TRUE)', glmCoin("income ~ Gender + Age", gdf, robust = TRUE))
+gl_case("robust_logit", 'glmCoin("Social participation ~ Gender + income, binomial", data, robust = TRUE, pmax = .5)',
+        glmCoin("Social participation ~ Gender + income, binomial", gdf, robust = TRUE, pmax = .5))
+gl_case("chain", 'glmCoin("income ~ Gender + Age
+Social participation ~ income + Gender, binomial", data, pmax = .5)',
+        glmCoin("income ~ Gender + Age
+Social participation ~ income + Gender, binomial", gdf, pmax = .5))
+gl_case("spanish", 'glmCoin("income ~ Gender + Age", data, language = "es", pmax = .5)', glmCoin("income ~ Gender + Age", gdf, language = "es", pmax = .5))
+gl_case("options", 'glmCoin("income ~ Gender + Age", data, pmax = .2, showArrows = FALSE, main = "GLM")', glmCoin("income ~ Gender + Age", gdf, pmax = .2, showArrows = FALSE, main = "GLM"))
+
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("Reference written:", length(manifest$cases), "cases\n")

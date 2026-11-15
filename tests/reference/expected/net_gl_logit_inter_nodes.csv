@@ -1,0 +1,11 @@
+"name","variable","Frequency","%","Type","Mean","Min","Max"
+"Gender:Female","Gender",535,53.5535535535536,"factor",NA,NA,NA
+"Gender:Male","Gender",464,46.4464464464465,"factor",NA,NA,NA
+"Social participation:No","Social participation",600,60.0600600600601,"factor",NA,NA,NA
+"Social participation:Yes","Social participation",399,39.9399399399399,"factor",NA,NA,NA
+"edu","edu",999,48.521021021021,"numeric",7.82252252252252,2,14
+"Gender*Social participation:Female*No","Gender*Social participation",336,33.6336336336336,"factor_interaction",NA,NA,NA
+"Gender*Social participation:Male*No","Gender*Social participation",264,26.4264264264264,"factor_interaction",NA,NA,NA
+"Gender*Social participation:Female*Yes","Gender*Social participation",199,19.9199199199199,"factor_interaction",NA,NA,NA
+"Gender*Social participation:Male*Yes","Gender*Social participation",200,20.02002002002,"factor_interaction",NA,NA,NA
+"Political participation:Yes","Political participation",277,27.7277277277277,"response_factor",NA,NA,NA

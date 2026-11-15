@@ -156,6 +156,23 @@ evolving = d_net_corr(cars, factorial="pc", sequence=[0.3, 0.5, 0.7, 0.9],
                       directory="corr_evolving")
 ```
 
+### Regression effects
+
+`glm_coin` fits one or several equations (`"response ~ terms, family"`) and draws every category
+of the explanatory variables, the numeric variables and the response as nodes. Each link from a
+category carries its effect on the response against the weighted mean of its variable (and
+against its first category); numeric variables carry their average slope. The standard errors are
+computed by the delta method (the robust HC1 covariance with `robust=True`).
+
+```python
+from netcoin import glm_coin
+
+net = glm_coin("income ~ gender + age
+votes ~ income + gender, binomial", survey, weights="cweight")
+net.equations   # fit of every equation (R2, AIC, deviance...)
+net.coeffs      # coefficient tables
+```
+
 ### A scattergram of the cases
 
 `sur_scat` draws the cases (or the patterns of answers) of a survey on the plane of a
@@ -270,6 +287,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
 | Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
 | Networks from a survey, CoWeb     | `sur_coin(...)`, `cob_coin(...)`           |
+| Regression networks               | `glm_coin(...)` (marginal effects against the weighted mean) |
 | Scattergram of the cases          | `sur_scat(...)` (MCA/PCA planes, k-means groups, patterns) |
 | Clusters and 2-d reductions       | `looking4clusters(...)` (PAM, hclust, k-means, PCA, MDS, t-SNE, NMF, UMAP) |
 | Log-linear associations           | `log_coin(...)`                            |

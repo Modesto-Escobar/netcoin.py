@@ -1,0 +1,11 @@
+"name","variable","Frequency","%","Type","Mean","Min","Max"
+"Gender:Female","Gender",532,53.4673366834171,"factor",NA,NA,NA
+"Gender:Male","Gender",463,46.5326633165829,"factor",NA,NA,NA
+"Age:15-29","Age",175,17.5879396984925,"factor",NA,NA,NA
+"Age:30-39","Age",143,14.3718592964824,"factor",NA,NA,NA
+"Age:40-49","Age",177,17.7889447236181,"factor",NA,NA,NA
+"Age:50-59","Age",154,15.4773869346734,"factor",NA,NA,NA
+"Age:60-69","Age",189,18.9949748743719,"factor",NA,NA,NA
+"Age:70 and +","Age",157,15.7788944723618,"factor",NA,NA,NA
+"income","income",995,45.5666518245235,"response_numeric",53.3978894472362,21,92.1
+"Social participation:Yes","Social participation",397,39.9396378269618,"response_factor",NA,NA,NA

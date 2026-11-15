@@ -1,0 +1,2 @@
+"model","family","n","n_obs","r2","r2.mcfadden","r2.nagelkerke","logLik","aic","bic","deviance","null.deviance","df.residual"
+"income ~ Gender + Age","gaussian",1083,995,0.091,0.011,0.084,-4093.01,8202.02,8241.24,103157.35,113474.23,988

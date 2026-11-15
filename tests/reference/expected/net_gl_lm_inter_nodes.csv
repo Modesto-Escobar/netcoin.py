@@ -1,0 +1,23 @@
+"name","variable","Frequency","%","Type","Mean","Min","Max"
+"Gender:Female","Gender",532,53.4673366834171,"factor",NA,NA,NA
+"Gender:Male","Gender",463,46.5326633165829,"factor",NA,NA,NA
+"Age:15-29","Age",175,17.5879396984925,"factor",NA,NA,NA
+"Age:30-39","Age",143,14.3718592964824,"factor",NA,NA,NA
+"Age:40-49","Age",177,17.7889447236181,"factor",NA,NA,NA
+"Age:50-59","Age",154,15.4773869346734,"factor",NA,NA,NA
+"Age:60-69","Age",189,18.9949748743719,"factor",NA,NA,NA
+"Age:70 and +","Age",157,15.7788944723618,"factor",NA,NA,NA
+"edu","edu",995,48.5778894472362,"numeric",7.82934673366834,2,14
+"Gender*Age:Female*15-29","Gender*Age",85,8.5427135678392,"factor_interaction",NA,NA,NA
+"Gender*Age:Male*15-29","Gender*Age",90,9.04522613065327,"factor_interaction",NA,NA,NA
+"Gender*Age:Female*30-39","Gender*Age",79,7.93969849246231,"factor_interaction",NA,NA,NA
+"Gender*Age:Male*30-39","Gender*Age",64,6.4321608040201,"factor_interaction",NA,NA,NA
+"Gender*Age:Female*40-49","Gender*Age",107,10.7537688442211,"factor_interaction",NA,NA,NA
+"Gender*Age:Male*40-49","Gender*Age",70,7.03517587939699,"factor_interaction",NA,NA,NA
+"Gender*Age:Female*50-59","Gender*Age",75,7.53768844221105,"factor_interaction",NA,NA,NA
+"Gender*Age:Male*50-59","Gender*Age",79,7.93969849246231,"factor_interaction",NA,NA,NA
+"Gender*Age:Female*60-69","Gender*Age",99,9.94974874371859,"factor_interaction",NA,NA,NA
+"Gender*Age:Male*60-69","Gender*Age",90,9.04522613065327,"factor_interaction",NA,NA,NA
+"Gender*Age:Female*70 and +","Gender*Age",87,8.74371859296483,"factor_interaction",NA,NA,NA
+"Gender*Age:Male*70 and +","Gender*Age",70,7.03517587939699,"factor_interaction",NA,NA,NA
+"income","income",995,45.5666518245235,"response_numeric",53.3978894472362,21,92.1

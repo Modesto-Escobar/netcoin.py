@@ -1,0 +1,2 @@
+"model","family","n","n_obs","r2","r2.mcfadden","r2.nagelkerke","logLik","aic","bic","deviance","null.deviance","df.residual"
+"flag ~ Gender + edu + Age","binomial",998,998,0.018,NA,0.033,NA,NA,NA,1355.57,1380.81,990

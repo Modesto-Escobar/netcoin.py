@@ -1,0 +1,5 @@
+"name","variable","Frequency","%","Type","Mean","Min","Max"
+"Gender:Female","Gender",575.547061005607,52.8605702679394,"factor",NA,NA,NA
+"Gender:Male","Gender",513.255156012252,47.1394297320606,"factor",NA,NA,NA
+"edu","edu",1088.80221701786,47.7770363999381,"numeric",7.73324436799257,2,14
+"Social participation:Yes","Social participation",419.348694242537,38.514680415613,"response_factor",NA,NA,NA

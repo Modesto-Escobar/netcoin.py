@@ -1184,6 +1184,70 @@
     "net_sc_many": {
       "call": "surScat(ess, V4, nclusters = c(2, 5, 3))",
       "files": ["net_sc_many_nodes", "net_sc_many_links"]
+    },
+    "net_gl_lm": {
+      "call": "glmCoin(\"income ~ Gender + Age\", data)",
+      "files": ["net_gl_lm_nodes", "net_gl_lm_links"]
+    },
+    "net_gl_lm_inter": {
+      "call": "glmCoin(\"income ~ Gender*Age + edu\", data)",
+      "files": ["net_gl_lm_inter_nodes", "net_gl_lm_inter_links"]
+    },
+    "net_gl_lm_numint": {
+      "call": "glmCoin(\"income ~ Gender*edu\", data)",
+      "files": ["net_gl_lm_numint_nodes", "net_gl_lm_numint_links"]
+    },
+    "net_gl_logit": {
+      "call": "glmCoin(\"Social participation ~ Gender + income, binomial\", data, pmax = .5)",
+      "files": ["net_gl_logit_nodes", "net_gl_logit_links"]
+    },
+    "net_gl_logit01": {
+      "call": "glmCoin(\"flag ~ Gender + edu + Age, binomial\", data, pmax = .5)",
+      "files": ["net_gl_logit01_nodes", "net_gl_logit01_links"]
+    },
+    "net_gl_logit_inter": {
+      "call": "glmCoin(\"Political participation ~ Gender*Social participation + edu, binomial\", data, pmax = .5)",
+      "files": ["net_gl_logit_inter_nodes", "net_gl_logit_inter_links"]
+    },
+    "net_gl_poisson": {
+      "call": "glmCoin(\"cnt ~ Gender + income, poisson\", data, pmax = .5)",
+      "files": ["net_gl_poisson_nodes", "net_gl_poisson_links"]
+    },
+    "net_gl_quasipoisson": {
+      "call": "glmCoin(\"cnt ~ Gender + Age, quasipoisson\", data, pmax = .5)",
+      "files": ["net_gl_quasipoisson_nodes", "net_gl_quasipoisson_links"]
+    },
+    "net_gl_gamma": {
+      "call": "glmCoin(\"pos ~ Age + edu, Gamma\", data, pmax = .5)",
+      "files": ["net_gl_gamma_nodes", "net_gl_gamma_links"]
+    },
+    "net_gl_weights": {
+      "call": "glmCoin(\"income ~ Gender + Age\", data, weights = \"cweight\")",
+      "files": ["net_gl_weights_nodes", "net_gl_weights_links"]
+    },
+    "net_gl_weights_logit": {
+      "call": "glmCoin(\"Social participation ~ Gender + edu, binomial\", data, weights = \"cweight\", pmax = .5)",
+      "files": ["net_gl_weights_logit_nodes", "net_gl_weights_logit_links"]
+    },
+    "net_gl_robust": {
+      "call": "glmCoin(\"income ~ Gender + Age\", data, robust = TRUE)",
+      "files": ["net_gl_robust_nodes", "net_gl_robust_links"]
+    },
+    "net_gl_robust_logit": {
+      "call": "glmCoin(\"Social participation ~ Gender + income, binomial\", data, robust = TRUE, pmax = .5)",
+      "files": ["net_gl_robust_logit_nodes", "net_gl_robust_logit_links"]
+    },
+    "net_gl_chain": {
+      "call": "glmCoin(\"income ~ Gender + Age\nSocial participation ~ income + Gender, binomial\", data, pmax = .5)",
+      "files": ["net_gl_chain_nodes", "net_gl_chain_links"]
+    },
+    "net_gl_spanish": {
+      "call": "glmCoin(\"income ~ Gender + Age\", data, language = \"es\", pmax = .5)",
+      "files": ["net_gl_spanish_nodes", "net_gl_spanish_links"]
+    },
+    "net_gl_options": {
+      "call": "glmCoin(\"income ~ Gender + Age\", data, pmax = .2, showArrows = FALSE, main = \"GLM\")",
+      "files": ["net_gl_options_nodes", "net_gl_options_links"]
     }
   }
 }

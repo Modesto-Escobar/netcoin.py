@@ -1,0 +1,5 @@
+"name","variable","Frequency","%","Type","Mean","Min","Max"
+"Gender:Female","Gender",532,53.4673366834171,"factor",NA,NA,NA
+"Gender:Male","Gender",463,46.5326633165829,"factor",NA,NA,NA
+"edu","edu",995,48.5778894472362,"numeric",7.82934673366834,2,14
+"income","income",995,45.5666518245235,"response_numeric",53.3978894472362,21,92.1

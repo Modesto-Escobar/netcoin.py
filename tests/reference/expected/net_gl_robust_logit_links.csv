@@ -1,0 +1,4 @@
+"Source","Target","estimate","std.error","statistic","p.value","s.value","conf.low","conf.high","estimate.base","std.error.base","p.value.base","Model","hidden"
+"Gender:Female","Social participation:Yes",-2.53477994061732,1.45004000054234,-1.74807587354091,0.0804508900813979,3.63574780724844,-5.37680611782275,0.30724623658812,0,NA,NA,"Social participation ~ Gender + income, binomial",FALSE
+"Gender:Male","Social participation:Yes",2.91883750737752,1.66974302885754,1.74807587570803,0.0804508897061899,3.6357478139769,-0.353798692620077,6.19147370737512,5.45361744799484,3.11978302939988,0.0804508898805823,"Social participation ~ Gender + income, binomial",FALSE
+"income","Social participation:Yes",0.00941841564790115,0.144466702826752,0.065194369800188,0.94801924384272,0.0770117501998217,-0.273731118857784,0.292567950153586,0.00941841564790115,0.144466702826752,0.94801924384272,"Social participation ~ Gender + income, binomial",TRUE

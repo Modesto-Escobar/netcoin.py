@@ -1,0 +1,2 @@
+"model","family","n","n_obs","r2","r2.mcfadden","r2.nagelkerke","logLik","aic","bic","deviance","null.deviance","df.residual"
+"pos ~ Age + edu","Gamma",998,998,0.012,0.003,0.013,-2490.17,4996.34,5035.59,337.91,342.13,991
