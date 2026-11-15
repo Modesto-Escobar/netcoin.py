@@ -185,6 +185,16 @@ def test_the_response_of_a_multinomial_must_be_a_factor(data):
         glm_coin("cnt ~ x, multinomial", data)
 
 
+def test_aliased_terms_are_left_out_of_the_fit_instead_of_failing(data):
+    data = data.assign(x2=2 * data["x"])
+    with pytest.warns(UserWarning, match="aliased"):
+        net = glm_coin("y ~ g + x + x2", data, pmax=1)
+    row = net.links[net.links["Source"] == "x2"].iloc[0]
+    assert np.isnan(row["estimate"]) and "x2" not in net.coeffs[0]["term"].tolist()
+    assert net.equations["df.residual"].iloc[0] == 400 - 3
+    assert net.links.loc[net.links["Source"] == "x", "estimate"].notna().all()
+
+
 def test_unknown_data_problems_are_reported(data):
     with pytest.raises(ValueError, match="not found in data"):
         glm_coin("y ~ x", data, weights="nope")

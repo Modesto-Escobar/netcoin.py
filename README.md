@@ -287,6 +287,7 @@ can be written with `directory=` or `.plot()`, and put in a `multigraphCreate`.
 | Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
 | Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
 | Networks from a survey, CoWeb     | `sur_coin(...)`, `cob_coin(...)`           |
+| One page of several networks      | `caring(path, arguments)` (sur_coin, sur_scat, log_coin, all_net, glm_coin) |
 | Regression networks               | `glm_coin(...)` (marginal effects against the weighted mean) |
 | Scattergram of the cases          | `sur_scat(...)` (MCA/PCA planes, k-means groups, patterns) |
 | Clusters and 2-d reductions       | `looking4clusters(...)` (PAM, hclust, k-means, PCA, MDS, t-SNE, NMF, UMAP) |

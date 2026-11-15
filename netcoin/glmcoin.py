@@ -124,6 +124,11 @@ class Model:
     cov_model: np.ndarray | None = None               # covariance of the model, even when cov is robust
     column_order: list | None = None                  # patsy's columns in the order of R's model.matrix
     terms: list | None = None                         # the terms in the order of R's term.labels
+    kept: np.ndarray | None = None                    # the columns that are not aliased
+
+    @property
+    def rank(self) -> int:
+        return int(self.kept.sum()) if self.kept is not None else self.X.shape[1]
 
     @property
     def link(self) -> str:
@@ -266,17 +271,28 @@ def fit_model(line: str, formula: str, declared: str | None, data: pd.DataFrame,
     else:
         y = y_raw.to_numpy(dtype=float)
     scale = None if family in ("gaussian", "Gamma", "inverse.gaussian", "quasibinomial", "quasipoisson") else 1.0
-    model = sm.GLM(y, X.to_numpy(), family=_sm_family(family), var_weights=w)
+    from .logcoin import _estimable
+
+    Xn = X.to_numpy()
+    kept = _estimable(Xn * np.sqrt(w)[:, None])               # a column that is a combination of the previous
+    if not kept.all():                                        # ones is aliased: no coefficient, as in R's NA
+        warnings.warn("in '" + line + "', " + ", ".join(c for c, k in zip(X.columns, kept) if not k)
+                      + " is/are aliased (a combination of other terms) and left out of the fit")
+    Xk = Xn[:, kept]
+    model = sm.GLM(y, Xk, family=_sm_family(family), var_weights=w)
     result = model.fit(scale="X2" if scale is None else scale, maxiter=100, tol=1e-12)
-    coef = np.asarray(result.params)
+    coef = np.zeros(Xn.shape[1])
+    coef[kept] = np.asarray(result.params)
     dispersion = float(result.scale)
+    cov_model = np.zeros((Xn.shape[1], Xn.shape[1]))
+    cov_model[np.ix_(kept, kept)] = np.asarray(result.cov_params())
+    cov = cov_model
     if robust:
-        cov = hc1(family, X.to_numpy(), y, coef, w)
-    else:
-        cov = np.asarray(result.cov_params())
+        cov = np.zeros_like(cov_model)
+        cov[np.ix_(kept, kept)] = hc1(family, Xk, y, coef[kept], w)
     return Model(line, formula, family, declared or "gaussian", is_lm, lhs, y_raw, work.drop(columns="(weights)", errors="ignore"),
-                 w, info, X.to_numpy(), coef, list(X.columns), cov, dispersion, result, factors, None, y,
-                 np.asarray(result.cov_params()), order, terms)
+                 w, info, Xn, coef, list(X.columns), cov, dispersion, result, factors, None, y,
+                 cov_model, order, terms, kept)
 
 
 def hc1(family: str, X: np.ndarray, y: np.ndarray, coef: np.ndarray, w: np.ndarray) -> np.ndarray:
@@ -539,6 +555,9 @@ def summary_nodes_links(model: Model, drop_empty: bool = True, outliers: bool = 
                                        "Mean": np.nan, "Min": np.nan, "Max": np.nan}))
         elif pd.api.types.is_numeric_dtype(frame[term]):
             table = avg_slope(model, term)
+            if model.kept is not None and term in model.names and not model.kept[model.names.index(term)]:
+                table[["estimate", "std.error", "statistic", "p.value", "s.value", "conf.low", "conf.high",
+                       "estimate.base", "std.error.base", "p.value.base"]] = np.nan
             table["Source"] = term
             if not model.is_multinomial:
                 table["Target"] = target_label
@@ -870,7 +889,7 @@ def eq_summary(models: list[Model]) -> pd.DataFrame:
         dev = _deviance(m.family, y, mu, w)
         mu0 = np.full_like(y, (w * y).sum() / w.sum())
         dev0 = _deviance(m.family, y, mu0, w)
-        rank = m.X.shape[1]
+        rank = m.rank
         aic_family = _family_aic(m.family, y, mu, w, dev)
         aic_family0 = _family_aic(m.family, y, mu0, w, dev0)
         extra = 1 if m.family in ("gaussian", "Gamma", "inverse.gaussian") else 0
@@ -944,13 +963,15 @@ def _model_coefs(m: Model, level: float) -> pd.DataFrame:
         return _multinomial_coefs(m, level)
     w = m.weights
     estimated = m.family in ("gaussian", "Gamma", "inverse.gaussian", "quasibinomial", "quasipoisson")
-    se = np.sqrt(np.diag(m.cov_model))
-    dfres = (int((w > 0).sum()) - m.X.shape[1]) if estimated else np.inf
-    stat = m.coef / se
+    kept = m.kept if m.kept is not None else np.ones(m.X.shape[1], bool)
+    se = np.sqrt(np.diag(m.cov_model))[kept]
+    coef, columns, X = m.coef[kept], [c for c, k in zip(m.names, kept) if k], m.X[:, kept]
+    dfres = (int((w > 0).sum()) - m.rank) if estimated else np.inf
+    stat = coef / se
     crit = stats.t.ppf(1 - (1 - level) / 2, dfres) if np.isfinite(dfres) else stats.norm.ppf(1 - (1 - level) / 2)
     pvalue = 2 * stats.t.sf(np.abs(stat), dfres) if np.isfinite(dfres) else 2 * stats.norm.sf(np.abs(stat))
     names, sources, factor = [], [], []
-    for column in m.names:
+    for column in columns:
         if column == "Intercept":
             names.append("(Intercept)")
             sources.append("(Intercept)")
@@ -968,8 +989,8 @@ def _model_coefs(m: Model, level: float) -> pd.DataFrame:
     def mean(x):
         return (w * x).sum() / w.sum()
 
-    sd_x = [np.nan if c == "Intercept" else float(np.sqrt((w * (m.X[:, j] - mean(m.X[:, j])) ** 2).sum() / w.sum()))
-            for j, c in enumerate(m.names)]
+    sd_x = [np.nan if c == "Intercept" else float(np.sqrt((w * (X[:, j] - mean(X[:, j])) ** 2).sum() / w.sum()))
+            for j, c in enumerate(columns)]
     target = m.target
     if m.is_binomial:
         y = m.response
@@ -980,9 +1001,9 @@ def _model_coefs(m: Model, level: float) -> pd.DataFrame:
         else:
             u = sorted(pd.Series(y).dropna().unique())
             target = f"{target}:{_text_number(u[1])}" if len(u) > 1 else target
-    table = pd.DataFrame({"Target": target, "term": names, "Source": sources, "factor": factor, "estimate": m.coef,
-                          "std.error": se, "statistic": stat, "p.value": pvalue, "conf.low": m.coef - crit * se,
-                          "conf.high": m.coef + crit * se, "sd.x": sd_x})
+    table = pd.DataFrame({"Target": target, "term": names, "Source": sources, "factor": factor, "estimate": coef,
+                          "std.error": se, "statistic": stat, "p.value": pvalue, "conf.low": coef - crit * se,
+                          "conf.high": coef + crit * se, "sd.x": sd_x})
     link = m.link
     sd_y = np.nan
     if link == "identity" and pd.api.types.is_numeric_dtype(m.response):
