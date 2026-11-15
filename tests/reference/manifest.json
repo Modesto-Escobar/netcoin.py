@@ -1245,6 +1245,26 @@
       "call": "glmCoin(\"income ~ Gender + Age\", data, language = \"es\", pmax = .5)",
       "files": ["net_gl_spanish_nodes", "net_gl_spanish_links"]
     },
+    "net_gl_mn": {
+      "call": "glmCoin(\"cls ~ Gender + edu, multinomial\", data, pmax = .9)",
+      "files": ["net_gl_mn_nodes", "net_gl_mn_links"]
+    },
+    "net_gl_mn_weights": {
+      "call": "glmCoin(\"cls ~ Gender + edu, multinomial\", data, weights = \"cweight\", pmax = .9)",
+      "files": ["net_gl_mn_weights_nodes", "net_gl_mn_weights_links"]
+    },
+    "net_gl_mn_inter": {
+      "call": "glmCoin(\"cls ~ Gender*Social participation + edu, multinomial\", data, pmax = .9)",
+      "files": ["net_gl_mn_inter_nodes", "net_gl_mn_inter_links"]
+    },
+    "net_gl_mn_binary": {
+      "call": "glmCoin(\"Social participation ~ Gender + edu, multinomial\", data, pmax = .9)",
+      "files": ["net_gl_mn_binary_nodes", "net_gl_mn_binary_links"]
+    },
+    "net_gl_mn_chain": {
+      "call": "glmCoin(\"edu ~ Gender + Age\ncls ~ edu + Gender, multinomial\", data, pmax = .9)",
+      "files": ["net_gl_mn_chain_nodes", "net_gl_mn_chain_links"]
+    },
     "net_gl_options": {
       "call": "glmCoin(\"income ~ Gender + Age\", data, pmax = .2, showArrows = FALSE, main = \"GLM\")",
       "files": ["net_gl_options_nodes", "net_gl_options_links"]

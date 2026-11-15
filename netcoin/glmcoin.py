@@ -212,8 +212,6 @@ def fit_model(line: str, formula: str, declared: str | None, data: pd.DataFrame,
     lhs, rhs = [p.strip() for p in formula.split("~", 1)]
     family = declared or default_family
     is_lm = declared is None and default_family == "gaussian"
-    if family == "multinomial":
-        raise NotImplementedError("multinomial equations are not available yet")
     if family == "quasi":
         raise NotImplementedError("the 'quasi' family needs its link and variance; use quasibinomial or quasipoisson")
     if auto_quasi and family == "binomial":
@@ -245,6 +243,19 @@ def fit_model(line: str, formula: str, declared: str | None, data: pd.DataFrame,
     terms = [_plain(t.name()) for t in term_list]
     y_raw = work[lhs] if lhs in work.columns else patsy.dmatrix("0 + " + lhs, work, return_type="dataframe").iloc[:, 0]
     factors = {c: _levels(work[c]) for c in names if isinstance(work[c].dtype, pd.CategoricalDtype)}
+    if family == "multinomial":
+        if lhs not in factors:
+            raise ValueError(f"the response of a multinomial equation must be a factor: '{lhs}'")
+        classes = factors[lhs]
+        if len(classes) < 2:
+            raise ValueError(f"the response '{lhs}' has only one observed level")
+        codes = y_raw.astype(str).map({c: i for i, c in enumerate(classes)}).to_numpy()
+        if robust:
+            warnings.warn("robust covariances are not available for multinomial equations: the model's is used")
+        coef, cov, _ = fit_multinomial(X.to_numpy(), codes, len(classes), w)
+        return Model(line, formula, family, "multinomial", False, lhs, y_raw,
+                     work.drop(columns="(weights)", errors="ignore"), w, info, X.to_numpy(), coef, list(X.columns), cov,
+                     1.0, None, factors, classes, codes.astype(float), cov, order, terms)
     if "binomial" in family:
         if isinstance(y_raw.dtype, pd.CategoricalDtype):
             y = (y_raw.astype(str) != factors[lhs][0]).astype(float).to_numpy()
@@ -311,13 +322,72 @@ def _inference(estimate: np.ndarray, se: np.ndarray) -> dict:
             "conf.low": estimate - _Z * se, "conf.high": estimate + _Z * se}
 
 
+def _softmax_probs(X: np.ndarray, beta: np.ndarray, classes: int) -> np.ndarray:
+    """Probabilities of the classes of a multinomial logit; ``beta`` is class by class, the first class the reference."""
+    b = beta.reshape(classes - 1, X.shape[1])
+    eta = np.column_stack([np.zeros(len(X)), X @ b.T])
+    eta -= eta.max(axis=1, keepdims=True)
+    e = np.exp(eta)
+    return e / e.sum(axis=1, keepdims=True)
+
+
+def fit_multinomial(X: np.ndarray, codes: np.ndarray, classes: int, w: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+    """Weighted multinomial logit by Newton-Raphson: coefficients (class by class), covariance, log-likelihood."""
+    p = X.shape[1]
+    beta = np.zeros((classes - 1) * p)
+    Y = np.eye(classes)[codes]
+    ll_old = -np.inf
+    for _ in range(100):
+        probs = _softmax_probs(X, beta, classes)
+        ll = float((w * np.log(probs[np.arange(len(X)), codes])).sum())
+        grad = np.concatenate([X.T @ (w * (Y[:, k] - probs[:, k])) for k in range(1, classes)])
+        hess = np.zeros(((classes - 1) * p, (classes - 1) * p))
+        for k in range(1, classes):
+            for l in range(1, classes):
+                weight = w * ((k == l) * probs[:, k] - probs[:, k] * probs[:, l])
+                hess[(k - 1) * p:k * p, (l - 1) * p:l * p] = -(X.T @ (X * weight[:, None]))
+        step = np.linalg.solve(-hess, grad)
+        beta = beta + step
+        if abs(ll - ll_old) < 1e-11 * (abs(ll) + 1) and np.abs(step).max() < 1e-9:
+            break
+        ll_old = ll
+    probs = _softmax_probs(X, beta, classes)
+    ll = float((w * np.log(probs[np.arange(len(X)), codes])).sum())
+    hess = np.zeros(((classes - 1) * p, (classes - 1) * p))
+    for k in range(1, classes):
+        for l in range(1, classes):
+            weight = w * ((k == l) * probs[:, k] - probs[:, k] * probs[:, l])
+            hess[(k - 1) * p:k * p, (l - 1) * p:l * p] = -(X.T @ (X * weight[:, None]))
+    return beta, np.linalg.inv(-hess), ll
+
+
+def predict_groups(model: Model, beta: np.ndarray, frame: pd.DataFrame) -> np.ndarray:
+    """Predictions on the response scale: one column per group (the classes of a multinomial, else one)."""
+    X = _design_for(model, frame)
+    if model.is_multinomial:
+        probs = _softmax_probs(X, beta, len(model.classes))
+        return probs[:, 1:] if len(model.classes) == 2 else probs         # a binary response has one group
+    return linkinv(model.family, X @ beta)[:, None]
+
+
+def group_labels(model: Model) -> list[str | None]:
+    if model.is_multinomial:
+        return list(model.classes[1:]) if len(model.classes) == 2 else list(model.classes)
+    return [None]
+
+
+def _scale_percent(model: Model) -> bool:
+    return model.is_binomial or model.is_multinomial
+
+
 def contrasts_gw(model: Model, group_vars: list[str]) -> pd.DataFrame:
     """Contrasts of the average predictions of a (combination of) factor(s) against their weighted mean.
 
     Port of ``contrastes_gw``. The average prediction of every combination of categories is that of
     all the cases, whatever their own category, with it set to the combination; the contrast
     subtracts the mean of those predictions weighted by the share of every combination in the
-    sample. The columns ``*.base`` contrast them with the first combination.
+    sample (within each class of a multinomial response). The columns ``*.base`` contrast them with
+    the first combination.
     """
     frame = model.frame
     for v in group_vars:
@@ -327,54 +397,52 @@ def contrasts_gw(model: Model, group_vars: list[str]) -> pd.DataFrame:
             raise ValueError(f"The variable '{v}' has only one observed level.")
     combos = list(product(*[model.factors[v] for v in group_vars]))
     w = model.weights
+    groups = group_labels(model)
+    n_groups, k = len(groups), len(combos)
 
     def averages(beta):
-        out = []
-        for combo in combos:
+        out = np.empty((n_groups, k))
+        for c, combo in enumerate(combos):
             counterfactual = frame.copy()
             for v, level in zip(group_vars, combo):
                 counterfactual[v] = pd.Categorical([level] * len(frame), categories=model.factors[v])
-            eta = _design_for(model, counterfactual) @ beta
-            out.append((w * linkinv(model.family, eta)).sum() / w.sum())
-        return np.array(out)
+            out[:, c] = (w[:, None] * predict_groups(model, beta, counterfactual)).sum(axis=0) / w.sum()
+        return out.ravel()                                   # class by class, the combinations inside
 
     estimates = averages(model.coef)
     jac = _jacobian(averages, model.coef)
     sigma = jac @ model.cov @ jac.T
 
     shares = frame[group_vars].astype(str).assign(w=w).groupby(group_vars, sort=False)["w"].sum()
-    lookup = {k if isinstance(k, tuple) else (k,): v for k, v in shares.items()}
+    lookup = {key if isinstance(key, tuple) else (key,): v for key, v in shares.items()}
     try:
         prop = np.array([lookup[c] for c in combos], dtype=float)
     except KeyError:
         raise ValueError("Weights could not be aligned with 'margin' levels")
-    prop = prop / lookup_sum(shares)
-    k = len(combos)
-    transform = np.eye(k) - np.outer(np.ones(k), prop / prop.sum())
+    prop = prop / prop.sum()
+    block = np.eye(k) - np.outer(np.ones(k), prop)
+    transform = np.kron(np.eye(n_groups), block)
     result = _inference(transform @ estimates, np.sqrt(np.diag(transform @ sigma @ transform.T)))
 
     is_base = np.array([all(level == model.factors[v][0] for v, level in zip(group_vars, combo)) for combo in combos])
     base = int(np.where(is_base)[0][0]) if is_base.any() else 0
-    to_base = np.eye(k) - np.outer(np.ones(k), np.eye(k)[base])
+    to_base = np.kron(np.eye(n_groups), np.eye(k) - np.outer(np.ones(k), np.eye(k)[base]))
     diff = to_base @ estimates
     se_diff = np.sqrt(np.diag(to_base @ sigma @ to_base.T))
+    base_rows = np.tile(is_base, n_groups)
     with np.errstate(divide="ignore", invalid="ignore"):
         p_base = 2 * stats.norm.sf(np.abs(diff / se_diff))
-    se_diff = np.where(is_base, np.nan, se_diff)
-    p_base = np.where(is_base, np.nan, p_base)
+    se_diff = np.where(base_rows, np.nan, se_diff)
+    p_base = np.where(base_rows, np.nan, p_base)
     result.update({"estimate.base": diff, "std.error.base": se_diff, "p.value.base": p_base})
     out = pd.DataFrame(result)
-    if model.is_binomial:
+    if _scale_percent(model):
         for col in ("estimate", "std.error", "conf.low", "conf.high", "estimate.base", "std.error.base"):
             out[col] = out[col] * 100
     label = "*".join(group_vars)
-    out.insert(0, "Source", [f"{label}:{'*'.join(c)}" for c in combos])
-    out.insert(1, "Target", model.target)
+    out.insert(0, "Source", [f"{label}:{'*'.join(c)}" for _ in groups for c in combos])
+    out.insert(1, "Target", [model.target if g is None else f"{model.target}:{g}" for g in groups for _ in combos])
     return out
-
-
-def lookup_sum(shares: pd.Series) -> float:
-    return float(shares.sum())
 
 
 def avg_slope(model: Model, variable: str) -> pd.DataFrame:
@@ -386,18 +454,19 @@ def avg_slope(model: Model, variable: str) -> pd.DataFrame:
     def slope(beta):
         up, down = frame.copy(), frame.copy()
         up[variable], down[variable] = x + h, x - h
-        p_up = linkinv(model.family, _design_for(model, up) @ beta)
-        p_down = linkinv(model.family, _design_for(model, down) @ beta)
-        return np.array([(w * (p_up - p_down) / (2 * h)).sum() / w.sum()])
+        diff = (predict_groups(model, beta, up) - predict_groups(model, beta, down)) / (2 * h)
+        return (w[:, None] * diff).sum(axis=0) / w.sum()
 
     estimate = slope(model.coef)
     jac = _jacobian(slope, model.coef)
     se = np.sqrt(np.diag(jac @ model.cov @ jac.T))
     out = pd.DataFrame(_inference(estimate, se))
-    if model.is_binomial:
+    if _scale_percent(model):
         for col in ("estimate", "std.error", "conf.low", "conf.high"):
             out[col] = out[col] * 100
     out["estimate.base"], out["std.error.base"], out["p.value.base"] = out["estimate"], out["std.error"], out["p.value"]
+    groups = group_labels(model)
+    out["Target"] = [model.target if g is None else f"{model.target}:{g}" for g in groups]
     return out
 
 
@@ -470,7 +539,9 @@ def summary_nodes_links(model: Model, drop_empty: bool = True, outliers: bool = 
                                        "Mean": np.nan, "Min": np.nan, "Max": np.nan}))
         elif pd.api.types.is_numeric_dtype(frame[term]):
             table = avg_slope(model, term)
-            table["Source"], table["Target"] = term, target_label
+            table["Source"] = term
+            if not model.is_multinomial:
+                table["Target"] = target_label
             links.append(table)
             x = frame[term].to_numpy(dtype=float)
             nodes.append(_numeric_node(term, x, w, "numeric"))
@@ -597,11 +668,11 @@ def glm_coin(
     Each line of ``formulas`` is an equation, ``"response ~ term + term, family"``, where the family
     is ``gaussian`` (the default, a linear model), ``binomial`` (fitted as quasibinomial, with
     estimated dispersion), ``poisson``, ``quasipoisson``, ``Gamma``, ``inverse.gaussian`` or
-    ``quasibinomial``. The categories of every factor are nodes, and so are the numeric variables
+    ``quasibinomial``, or ``multinomial`` (a factor response with several categories: one group of effects per category, the first being the reference). The categories of every factor are nodes, and so are the numeric variables
     and the response; the links go from every explanatory category to the response, with the
     effect of the category against the mean of its variable weighted by the sample (``estimate``)
     and against its first category (``estimate.base``), and from every numeric variable with its
-    average slope. Effects in binomial equations are in percentage points. The standard errors
+    average slope. Effects in binomial and multinomial equations are in percentage points. The standard errors
     come from the delta method with the covariance of the model, or the robust HC1 one.
 
     Parameters
@@ -725,10 +796,72 @@ def _family_aic(family: str, y: np.ndarray, mu: np.ndarray, w: np.ndarray, dev: 
     return np.nan
 
 
+def _multinomial_summary(m: Model) -> dict:
+    """The row of ``eq_summary`` of a multinomial equation (deviance, log-likelihood and AIC as nnet gives them)."""
+    w, codes, k = m.weights, m.y.astype(int), len(m.classes)
+    probs = _softmax_probs(m.X, m.coef, k)
+    ll = float((w * np.log(probs[np.arange(len(codes)), codes])).sum())
+    shares = np.array([w[codes == c].sum() for c in range(k)]) / w.sum()
+    ll0 = float((w * np.log(shares[codes])).sum())
+    nobs = int((w > 0).sum())
+    n = nobs if np.allclose(w, 1) else float(w.sum())
+    edf = (k - 1) * m.X.shape[1]
+    dev, dev0 = -2 * ll, -2 * ll0
+    nagelkerke = (1 - np.exp(2 * (ll0 - ll) / n)) / (1 - np.exp(2 * ll0 / n))
+    return {"model": m.name.split(",")[0].strip() if "," in m.name else m.name, "family": "multinomial",
+            "n": round(n), "n_obs": nobs, "r2": round(1 - dev / dev0, 3), "r2.mcfadden": round(1 - ll / ll0, 3),
+            "r2.nagelkerke": round(nagelkerke, 3), "logLik": round(ll, 2), "aic": round(dev + 2 * edf, 2),
+            "bic": round(dev + np.log(nobs) * edf, 2), "deviance": round(dev, 2), "null.deviance": round(dev0, 2),
+            "df.residual": np.nan}
+
+
+def _multinomial_coefs(m: Model, level: float) -> pd.DataFrame:
+    """One block of coefficients per class but the reference (the first)."""
+    w = m.weights
+    k, p = len(m.classes), m.X.shape[1]
+    se = np.sqrt(np.diag(m.cov_model))
+    stat = m.coef / se
+    crit = stats.norm.ppf(1 - (1 - level) / 2)
+    names, sources, factor = [], [], []
+    for column in m.names:
+        if column == "Intercept":
+            names.append("(Intercept)")
+            sources.append("(Intercept)")
+            factor.append(False)
+            continue
+        name, pieces = _r_column_name(column)
+        names.append(name)
+        levels = [(v, l) for v, l in pieces if l is not None]
+        sources.append("*".join(v for v, _ in pieces) + ":" + "*".join(l for _, l in levels) if levels else name)
+        factor.append(bool(levels))
+
+    def mean(x):
+        return (w * x).sum() / w.sum()
+
+    sd_x = [np.nan if c == "Intercept" else float(np.sqrt((w * (m.X[:, j] - mean(m.X[:, j])) ** 2).sum() / w.sum()))
+            for j, c in enumerate(m.names)]
+    classes = m.classes[1:]
+    table = pd.DataFrame({
+        "Target": [f"{m.target}:{c}" for c in classes for _ in range(p)],
+        "term": names * len(classes), "Source": sources * len(classes), "factor": factor * len(classes),
+        "estimate": m.coef, "std.error": se, "statistic": stat, "p.value": 2 * stats.norm.sf(np.abs(stat)),
+        "conf.low": m.coef - crit * se, "conf.high": m.coef + crit * se, "sd.x": sd_x * len(classes)})
+    b = m.coef.reshape(k - 1, p)
+    latent = {}
+    for j, c in enumerate(classes):
+        xb = m.X @ b[j]
+        latent[f"{m.target}:{c}"] = float(np.sqrt((w * (xb - mean(xb)) ** 2).sum() / w.sum() + np.pi ** 2 / 3))
+    table.attrs.update({"family": "multinomial", "link": "logit", "sd.y": np.nan, "latent.sd": latent})
+    return table
+
+
 def eq_summary(models: list[Model]) -> pd.DataFrame:
     """Fit measures of every equation: pseudo R-squared, log-likelihood, AIC, BIC, deviances (``eqSummary``)."""
     rows = []
     for m in models:
+        if m.is_multinomial:
+            rows.append(_multinomial_summary(m))
+            continue
         w, y = m.weights, m.y
         nobs = int((w > 0).sum())
         n = nobs if np.allclose(w, 1) else float(w.sum())
@@ -807,6 +940,8 @@ def eq_coefs(models: list[Model], level: float = 0.95) -> list:
 
 
 def _model_coefs(m: Model, level: float) -> pd.DataFrame:
+    if m.is_multinomial:
+        return _multinomial_coefs(m, level)
     w = m.weights
     estimated = m.family in ("gaussian", "Gamma", "inverse.gaussian", "quasibinomial", "quasipoisson")
     se = np.sqrt(np.diag(m.cov_model))

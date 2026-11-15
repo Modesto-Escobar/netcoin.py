@@ -1,0 +1,2 @@
+"model","family","n","n_obs","r2","r2.mcfadden","r2.nagelkerke","logLik","aic","bic","deviance","null.deviance","df.residual"
+"Social participation ~ Gender + edu","multinomial",999,999,0.004,0.004,0.007,-669.64,1345.28,1360,1339.28,1344.19,NA

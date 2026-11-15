@@ -880,6 +880,10 @@ gl_case <- function(id, call_txt, expr) {
     write_json(cf, file.path(dir_out, paste0("gl_", id, "_coeffs.json")), auto_unbox = TRUE, digits = NA, na = "null", dataframe = "columns")
   }, error = function(e) message("glmCoin case ", id, " FAILED: ", conditionMessage(e)))
 }
+set.seed(5)
+gdf$cls <- factor(sample(c("low", "mid", "high"), nrow(gdf), TRUE, c(.3, .4, .3)), levels = c("low", "mid", "high"))
+gdf$cls[gdf$edu > 9 & runif(nrow(gdf)) < .5] <- "high"
+write_csv(transform(gdf, cls = as.character(cls)), "glm_data", dir_in)
 gl_case("lm", 'glmCoin("income ~ Gender + Age", data)', glmCoin("income ~ Gender + Age", gdf))
 gl_case("lm_inter", 'glmCoin("income ~ Gender*Age + edu", data)', glmCoin("income ~ Gender*Age + edu", gdf))
 gl_case("lm_numint", 'glmCoin("income ~ Gender*edu", data)', glmCoin("income ~ Gender*edu", gdf))
@@ -902,6 +906,17 @@ Social participation ~ income + Gender, binomial", data, pmax = .5)',
         glmCoin("income ~ Gender + Age
 Social participation ~ income + Gender, binomial", gdf, pmax = .5))
 gl_case("spanish", 'glmCoin("income ~ Gender + Age", data, language = "es", pmax = .5)', glmCoin("income ~ Gender + Age", gdf, language = "es", pmax = .5))
+gl_case("mn", 'glmCoin("cls ~ Gender + edu, multinomial", data, pmax = .9)', glmCoin("cls ~ Gender + edu, multinomial", gdf, pmax = .9))
+gl_case("mn_weights", 'glmCoin("cls ~ Gender + edu, multinomial", data, weights = "cweight", pmax = .9)',
+        glmCoin("cls ~ Gender + edu, multinomial", gdf, weights = "cweight", pmax = .9))
+gl_case("mn_inter", 'glmCoin("cls ~ Gender*Social participation + edu, multinomial", data, pmax = .9)',
+        glmCoin("cls ~ Gender*Social participation + edu, multinomial", gdf, pmax = .9))
+gl_case("mn_binary", 'glmCoin("Social participation ~ Gender + edu, multinomial", data, pmax = .9)',
+        glmCoin("Social participation ~ Gender + edu, multinomial", gdf, pmax = .9))
+gl_case("mn_chain", 'glmCoin("edu ~ Gender + Age
+cls ~ edu + Gender, multinomial", data, pmax = .9)',
+        glmCoin("edu ~ Gender + Age
+cls ~ edu + Gender, multinomial", gdf, pmax = .9))
 gl_case("options", 'glmCoin("income ~ Gender + Age", data, pmax = .2, showArrows = FALSE, main = "GLM")', glmCoin("income ~ Gender + Age", gdf, pmax = .2, showArrows = FALSE, main = "GLM"))
 
 write_json(manifest, file.path(root, "manifest.json"), auto_unbox = TRUE, pretty = TRUE)

@@ -151,9 +151,38 @@ def test_link_defaults_are_those_of_glm_coin(data):
     assert hidden.tolist() == (net.links["p.value"] >= 0.05).tolist()
 
 
-def test_a_multinomial_equation_is_not_available_yet(data):
-    with pytest.raises(NotImplementedError, match="multinomial"):
-        glm_coin("age ~ x, multinomial", data)
+def test_multinomial_matches_statsmodels_and_gives_one_group_per_class(data):
+    from netcoin.glmcoin import fit_multinomial, _softmax_probs
+    model = fit_model("age ~ x + g", "age ~ x + g", "multinomial", data, None, False)
+    assert model.classes == ["mid", "old", "young"]
+    reference = sm.MNLogit(model.y, pd.DataFrame(model.X)).fit(disp=0)
+    ours = model.coef.reshape(2, 3)
+    np.testing.assert_allclose(ours.T, np.asarray(reference.params), rtol=1e-6, atol=1e-8)
+    np.testing.assert_allclose(np.sqrt(np.diag(model.cov)), np.asarray(reference.bse).T.ravel(), rtol=1e-5)
+    probs = _softmax_probs(model.X, model.coef, 3)
+    np.testing.assert_allclose(probs.sum(axis=1), 1.0)
+    table = contrasts_gw(model, ["g"])
+    assert sorted(set(table["Target"])) == ["age:mid", "age:old", "age:young"] and len(table) == 6
+
+
+def test_a_multinomial_network_has_a_node_and_a_link_per_class(data):
+    net = glm_coin("age ~ g + x, multinomial", data, pmax=1)
+    assert {"age:young", "age:mid", "age:old"} <= set(net.nodes["name"])
+    assert set(net.links["Target"]) == {"age:young", "age:mid", "age:old"}
+    assert net.equations["family"].iloc[0] == "multinomial" and net.equations["df.residual"].isna().iloc[0]
+    assert set(net.coeffs[0]["Target"]) == {"age:old", "age:young"}                 # the first class is the reference
+
+
+def test_the_weights_of_a_multinomial_count_even_with_missing_values(data):
+    data.loc[:9, "x"] = np.nan
+    net = glm_coin("age ~ g + x, multinomial", data, weights="w", pmax=1)
+    kept = data.dropna(subset=["x"])
+    assert net.nodes.set_index("name")["Frequency"]["g:m"] == pytest.approx(kept.loc[kept["g"] == "m", "w"].sum())
+
+
+def test_the_response_of_a_multinomial_must_be_a_factor(data):
+    with pytest.raises(ValueError, match="must be a factor"):
+        glm_coin("cnt ~ x, multinomial", data)
 
 
 def test_unknown_data_problems_are_reported(data):

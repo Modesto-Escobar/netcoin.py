@@ -1,0 +1,2 @@
+"model","family","n","n_obs","r2","r2.mcfadden","r2.nagelkerke","logLik","aic","bic","deviance","null.deviance","df.residual"
+"cls ~ Gender + edu","multinomial",1000,1000,0.044,0.044,0.101,-1029.19,2070.37,2099.82,2058.37,2152.13,NA

@@ -1,0 +1,7 @@
+"name","variable","Frequency","%","Type","Mean","Min","Max"
+"Gender:Female","Gender",535,53.5,"factor",NA,NA,NA
+"Gender:Male","Gender",465,46.5,"factor",NA,NA,NA
+"edu","edu",1000,48.565,"numeric",7.8278,2,14
+"cls:low","cls",246,24.6,"response_factor",NA,NA,NA
+"cls:mid","cls",336,33.6,"response_factor",NA,NA,NA
+"cls:high","cls",418,41.8,"response_factor",NA,NA,NA
