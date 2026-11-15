@@ -1,9 +1,32 @@
-import os, webbrowser
+import os, warnings, webbrowser
+import numpy as np
+import pandas as pd
 from .network import netCreate
-from .utils import isnumeric, transpose
+from .utils import isnumeric, transpose, getByLanguage, nameList, frequencyList, languages
 from tempfile import mkdtemp
 from statistics import mean, median
 from copy import deepcopy
+
+def _table_to_dict(table):
+  """A DataFrame as a dict of lists of plain python values (NaN becomes None)."""
+  if not isinstance(table, pd.DataFrame):
+    return table
+  out = {}
+  for column in table.columns:
+    values = table[column].tolist()
+    out[str(column)] = [None if (isinstance(v, float) and v != v) or v is pd.NA or v is pd.NaT else v
+                        for v in values]
+  return out
+
+
+def _matrix_to_list(matrix):
+  """A layout given as array or DataFrame, as a list of rows."""
+  if isinstance(matrix, pd.DataFrame):
+    matrix = matrix.to_numpy()
+  if isinstance(matrix, np.ndarray):
+    return matrix.tolist()
+  return matrix
+
 
 class netCoin:
 
@@ -132,6 +155,14 @@ class netCoin:
       will be saved.
     '''
 
+    # the arguments, to rebuild the object (see add())
+    self._args = {k: deepcopy(v) for k, v in locals().items()
+                  if k not in ('self', 'directory', '__class__')}
+
+    nodes = _table_to_dict(nodes)
+    links = _table_to_dict(links)
+    layout = _matrix_to_list(layout)
+
     if not name:
       name = getByLanguage(nameList,language)
 
@@ -192,8 +223,20 @@ class netCoin:
             self.links[k] = list(map(str,links[k]))
         else:
           self.links[k] = checkItem(links[k],nlinks)
-      if not nodes:
-        self.nodes[name] = list(set(self.links[source]) | set(self.links[target]))
+      if not nodes:  # the nodes are the names found in the links, in order of appearance
+        self.nodes[name] = list(dict.fromkeys(self.links[source] + self.links[target]))
+
+      # as in R, only the links between two different nodes of the table are kept
+      known = set(self.nodes[name])
+      keep = [i for i, (a, b) in enumerate(zip(self.links[source], self.links[target]))
+              if a in known and b in known and a != b]
+      if len(keep) < nlinks:
+        for k in self.links:
+          self.links[k] = [self.links[k][i] for i in keep]
+      if not keep:
+        warnings.warn("links: no row (source and target) matches the '" + name + "' column of the nodes")
+        self.links = {}
+        del self.options['linkSource'], self.options['linkTarget']
 
     if tree:
       tree = checkTree(tree,self.nodes[name])
@@ -219,7 +262,7 @@ class netCoin:
       print("zoom: must be numeric between 0.1 and 10")
     if scenarios:
       if isnumeric(scenarios):
-        self.options["scenarios"] = scenarios
+        self.options["scenarios"] = int(scenarios) if float(scenarios).is_integer() else scenarios
       else:
         print("scenarios: must be numeric")
     if limits:
@@ -359,6 +402,28 @@ class netCoin:
       return [x for x in self.linkAttrNames if x in linkkeys] + [x for x in linkkeys if x not in self.linkAttrNames]
     else:
       return linkkeys
+
+  def nodes_frame(self):
+    """The nodes as a DataFrame, columns in display order."""
+    return pd.DataFrame({k: self.nodes[k] for k in self.getNodeAttr()})
+
+  def links_frame(self):
+    """The links as a DataFrame, columns in display order (empty if there are none)."""
+    return pd.DataFrame({k: self.links[k] for k in self.getLinkAttr()})
+
+  def add(self, **kwargs):
+    """A new netCoin object with some arguments changed or added.
+
+    Port of ``addNetCoin``: every argument of the constructor can be given
+    (``nodes``, ``links``, ``color``, ``main``...) and replaces the one the
+    object was built with; the rest is kept. The original is not modified.
+    """
+    unknown = set(kwargs) - set(self._args)
+    if unknown:
+      raise TypeError("unknown netCoin arguments: " + ", ".join(sorted(unknown)))
+    arguments = deepcopy(self._args)
+    arguments.update(kwargs)
+    return netCoin(**arguments)
 
   def ncount(self):
     return len(self.nodes[self.options['nodeName']])
@@ -522,18 +587,6 @@ class netCoin:
         # Construct the graph
         return klass(**kwds)
 
-
-languages = ['en','es','ca']
-
-nameList = ['name','nombre','nom']
-nameList = dict(zip(languages,nameList))
-
-frequencyList = ["frequency","frecuencia","freq\u00FC\u00E8ncia","%"]
-
-def getByLanguage(varlist,language):
-  if language not in varlist:
-    language = "en"
-  return varlist[language]
 
 def checkTree(links,names):
       if links:

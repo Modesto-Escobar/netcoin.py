@@ -33,3 +33,5 @@ must be deleted. Run `pytest -rx` to list them with their reasons.
 | `sim(coin, "L")` alone | Returns a single matrix instead of `conf.L`, `confidence`, `conf.U`. |
 | `coin(total = TRUE)` | The `Total` variable is listed twice (it is added and also passes the frequency filter). Python lists it once. |
 | `coin(weight = w)` | Overwrites a user-given `maximum` with `sum(w)`. Python honours `maximum` and defaults to `sum(w)`. |
+| `allNet(..., pairwise = TRUE)` with missing values | Fails: `colSums(incidences) > 0` is `NA` and is used as a column index. Python ignores the `NA` in the sums. |
+| `allNet(..., layout = "mc")` | The layout is computed on all the variables, so it does not line up with the nodes if `minimum`, `maximum` or `sort` change them. Python uses the variables that are nodes. |

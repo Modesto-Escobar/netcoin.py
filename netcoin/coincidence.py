@@ -8,6 +8,8 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
+from .utils import frequencyNames, getByLanguage, nameList
+
 
 def _format_count(x: float) -> str:
     return str(int(x)) if float(x).is_integer() else f"{x:g}"
@@ -240,3 +242,116 @@ def coin(
         m, xm = frame(m), frame(xm)
 
     return Coin(frame(f), n, m, xm)
+
+
+# --------------------------------------------------------------- coocur ----
+@dataclass
+class Cooc:
+    """Result of :func:`coocur`: occurrences shared by pairs of variables.
+
+    ``n`` is the total number of occurrences and ``m`` the sum, over the cases,
+    of the largest occurrence of each case.
+    """
+
+    matrix: pd.DataFrame
+    n: float
+    m: float
+
+    def __repr__(self) -> str:
+        a = self.matrix.to_numpy(dtype=float)
+        text = np.where(np.tril(np.ones(a.shape, dtype=bool)), np.vectorize(_format_count)(a), "")
+        table = pd.DataFrame(text, index=self.matrix.index, columns=self.matrix.columns)
+        return f"n= {_format_count(self.n)}; m= {_format_count(self.m)}\n" + table.to_string()
+
+
+def coocur(
+    ocurrences: pd.DataFrame | np.ndarray,
+    minimum: float = 1,
+    maximum: float = np.inf,
+    sort: bool = False,
+    decreasing: bool = True,
+) -> Cooc:
+    """Co-occurrence of counts: for each pair, the sum over cases of the smaller count.
+
+    Port of ``coocur`` from the R package netCoin. Unlike :func:`coin`, the
+    variables need not be 0/1.
+    """
+    df = ocurrences if isinstance(ocurrences, pd.DataFrame) else pd.DataFrame(ocurrences)
+    x = df.apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
+    labels = [str(c) for c in df.columns]
+    k = x.shape[1]
+    result = np.empty((k, k))
+    for i in range(k):
+        for j in range(i, k):
+            result[i, j] = result[j, i] = np.sum(np.minimum(x[:, i], x[:, j]))
+
+    d = np.diag(result)
+    order = np.arange(k)
+    if sort:
+        order = np.argsort(-d if decreasing else d, kind="stable")
+    keep = [i for i in order if minimum <= d[i] <= maximum]
+    if not keep:
+        raise ValueError("no variables left: check minimum and maximum")
+    names = [labels[i] for i in keep]
+    sub = x[:, keep]
+    return Cooc(pd.DataFrame(result[np.ix_(keep, keep)], index=names, columns=names),
+                float(np.sum(sub)), float(np.sum(np.max(sub, axis=1))))
+
+
+# ------------------------------------------------------------- prop_coin ----
+def prop_coin(x: Coin, margin: int = 0, decimals: int = 1) -> pd.DataFrame:
+    """Coincidences as percentages.
+
+    Port of ``propCoin`` from the R package netCoin.
+
+    Parameters
+    ----------
+    x : Coin
+    margin : {0, 1, 2}
+        0: percentage of the cases (of the cases with data in both variables, if
+        pairwise); 1: of the frequency of the row variable; 2: of the column's.
+    decimals : int
+        Rounding.
+    """
+    if not isinstance(x, Coin):
+        raise TypeError("x must be a Coin object (see coin())")
+    a = x.matrix.to_numpy(dtype=float)
+    diag = np.diag(a)
+    if margin == 0:
+        n = x.m.to_numpy(dtype=float) if x.pairwise else x.n
+        values = 100 * a / n
+    elif margin == 1:
+        values = 100 * a / diag[:, None]
+    elif margin == 2:
+        values = 100 * a / diag[None, :]
+    else:
+        raise ValueError("margin must be 0, 1 or 2")
+    return pd.DataFrame(np.round(values, decimals), index=x.matrix.index, columns=x.matrix.columns)
+
+
+# -------------------------------------------------------------- as_nodes ----
+def as_nodes(
+    data: Coin | pd.DataFrame,
+    frequency: bool = True,
+    percentages: bool = False,
+    language: str = "en",
+) -> pd.DataFrame:
+    """Table of nodes (name, frequency and/or percentage) from a :class:`Coin`.
+
+    Port of ``asNodes`` from the R package netCoin. If ``data`` is an edge list
+    (with ``Source`` and ``Target`` columns) the nodes are the sorted names found
+    in it.
+    """
+    name = getByLanguage(nameList, language)
+    if isinstance(data, Coin):
+        out = pd.DataFrame({name: data.labels})
+        divider = np.diag(data.m.to_numpy(dtype=float)) if data.pairwise else data.n
+        if frequency:
+            out[getByLanguage(frequencyNames, language)] = data.frequencies.to_numpy()
+        if percentages:
+            out["%"] = data.frequencies.to_numpy(dtype=float) / divider * 100
+        return out
+    if isinstance(data, pd.DataFrame) and {"Source", "Target"} <= set(data.columns):
+        names = sorted(set(data["Source"]) | set(data["Target"]))
+        return pd.DataFrame({name: names})
+    raise TypeError("data is neither a Coin object nor an edge DataFrame (Source, Target)")

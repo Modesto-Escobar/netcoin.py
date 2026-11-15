@@ -73,6 +73,12 @@ def _method_codes(procedures) -> list[str]:
     return list(dict.fromkeys(_method_code(p) for p in procedures))
 
 
+def edge_column_name(procedure: str) -> str:
+    """Name of the column of an edge list that holds ``procedure`` (e.g. ``"Z"`` is ``"p(Z)"``)."""
+    name = _CODE_NAMES[_method_code(procedure)]
+    return _EDGE_RENAME.get(name, name)
+
+
 def _result_names(code: str) -> list[str]:
     return ["conf.L", "confidence", "conf.U"] if code == "L" else [_CODE_NAMES[code]]
 

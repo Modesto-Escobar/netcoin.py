@@ -110,6 +110,17 @@ also accept the table of incidences directly. Procedure names follow the R
 package: `"Jaccard"`, `"Haberman"`, `"Z"`, `"confidence"`... or their short
 forms (`"J"`, `"H"`, `"Ham"`, `"CC"`, `"Hyp"`).
 
+### A complete network in one call
+
+```python
+from netcoin import all_net
+
+net = all_net(incidences, procedures=["Jaccard", "Haberman"], lwidth="Jaccard",
+              layout="pc", main="Keywords")      # counts, nodes, links and graph
+net = net.add(color="%")                          # a copy with some arguments changed
+net.plot()                                        # opens it in the browser
+```
+
 ## Main features
 
 | Area                              | Key API                                    |
@@ -122,6 +133,9 @@ forms (`"J"`, `"H"`, `"Ham"`, `"CC"`, `"Hyp"`).
 | Observed vs expected coincidences | `expected_list(...)`                       |
 | Edge lists                        | `edge_list(...)`                           |
 | Dichotomising categorical data    | `dichotomize(...)`                         |
+| Counts and percentages            | `coocur(...)`, `prop_coin(...)`, `as_nodes(...)` |
+| Complete network from incidences  | `all_net(...)`, `netCoin.add(...)`         |
+| Layouts from coincidences         | `layout_mca(...)`, `layout_pca(...)`       |
 
 Visualisations are powered by D3.js. All required web assets (`d3.min.js`,
 templates, stylesheets and language files for English, Spanish and Catalan)

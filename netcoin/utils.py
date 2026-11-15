@@ -56,3 +56,19 @@ def getLanguageScript(obj):
 def transpose(m):
   return [[m[j][i] for j in range(len(m))] for i in range(len(m[0]))]
 
+
+
+# ------------------------------------------------------------- languages ----
+languages = ['en', 'es', 'ca']
+
+nameList = dict(zip(languages, ['name', 'nombre', 'nom']))
+frequencyList = ["frequency", "frecuencia", "freqüència", "%"]
+frequencyNames = dict(zip(languages, frequencyList[:3]))
+labelList = dict(zip(languages, ['label', 'etiqueta', 'etiqueta']))
+
+
+def getByLanguage(varlist, language):
+  """The entry of ``varlist`` for ``language`` ('en' if it is unknown)."""
+  if language not in varlist:
+    language = "en"
+  return varlist[language]

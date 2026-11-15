@@ -452,6 +452,82 @@
     "dicho_regex_ws": {
       "call": "dichotomize(txt, \"sentence\", sep = \"\\s+\", regex = TRUE, text = \"upper\", length = 3)",
       "files": "dicho_regex_ws"
+    },
+    "coocur_default": {
+      "call": "coocur(counts)",
+      "files": "coocur_default"
+    },
+    "coocur_min3_sort": {
+      "call": "coocur(counts, minimum = 3, sort = TRUE)",
+      "files": "coocur_min3_sort"
+    },
+    "prop_margin0": {
+      "call": "propCoin(coin(galapagos), margin = 0)",
+      "files": "prop_margin0"
+    },
+    "prop_margin1": {
+      "call": "propCoin(coin(galapagos), margin = 1)",
+      "files": "prop_margin1"
+    },
+    "prop_margin2": {
+      "call": "propCoin(coin(galapagos), margin = 2)",
+      "files": "prop_margin2"
+    },
+    "prop_margin0_dec3": {
+      "call": "propCoin(coin(galapagos), decimals = 3)",
+      "files": "prop_margin0_dec3"
+    },
+    "prop_pairwise": {
+      "call": "propCoin(coin(galapagos_na, pairwise = TRUE))",
+      "files": "prop_pairwise"
+    },
+    "nodes_default": {
+      "call": "asNodes(coin(galapagos))",
+      "files": "nodes_default"
+    },
+    "nodes_both": {
+      "call": "asNodes(coin(galapagos), TRUE, TRUE)",
+      "files": "nodes_both"
+    },
+    "nodes_pct_es": {
+      "call": "asNodes(coin(galapagos), FALSE, TRUE, \"es\")",
+      "files": "nodes_pct_es"
+    },
+    "nodes_freq_ca": {
+      "call": "asNodes(coin(galapagos), TRUE, FALSE, \"ca\")",
+      "files": "nodes_freq_ca"
+    },
+    "nodes_pairwise": {
+      "call": "asNodes(coin(galapagos_na, pairwise = TRUE), TRUE, TRUE)",
+      "files": "nodes_pairwise"
+    },
+    "nodes_edges": {
+      "call": "asNodes(edgeList(coin(galapagos)))",
+      "files": "nodes_edges"
+    },
+    "allnet_default": {
+      "call": "allNet(galapagos)",
+      "files": "allnet_default"
+    },
+    "allnet_links": {
+      "call": "allNet(galapagos, procedures = c(\"Jaccard\",\"Haberman\"), lwidth = \"Jaccard\", lcolor = \"Z\", criteria = \"Jaccard\", minL = .3, language = \"es\", frequency = TRUE, percentages = FALSE, layout = \"pc\")",
+      "files": "allnet_links"
+    },
+    "allnet_nodes": {
+      "call": "allNet(galapagos, nodes = user_nodes, name = \"name\")",
+      "files": "allnet_nodes"
+    },
+    "allnet_weight": {
+      "call": "allNet(galapagos, weight = weights, support = 3, sort = TRUE)",
+      "files": "allnet_weight"
+    },
+    "allnet_mca": {
+      "call": "allNet(dice[,2:11], layout = \"mc\", procedures = \"Jaccard\", criteria = \"Jaccard\", minL = .1)",
+      "files": "allnet_mca"
+    },
+    "allnet_bonferroni": {
+      "call": "allNet(dice[,2:11], Bonferroni = TRUE, maxL = .2, directed = TRUE, sortL = \"Haberman\")",
+      "files": "allnet_bonferroni"
     }
   }
 }
